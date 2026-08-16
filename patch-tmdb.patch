@@ -1,0 +1,14 @@
+--- src/lib/tmdb.ts
++++ src/lib/tmdb.ts
+@@ -316,6 +316,11 @@
+   return normalizeShow(data);
+ }
+ 
++export async function fetchRelatedShows(id: string): Promise<Show[]> {
++  const data = await tmdbRequest<any[]>(`/shows/${id}/related`);
++  return data.map(normalizeShow);
++}
++
+ export async function fetchSeasonDetails(tvId: string, seasonNumber: number): Promise<SeasonDetails> {
+   const cleanId = tvId.replace(/^(tv|series)-/, '');
+   const data = await tmdbRequest<SeasonDetails>(`/tv/${cleanId}/season/${seasonNumber}`);

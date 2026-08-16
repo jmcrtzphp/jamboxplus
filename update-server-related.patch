@@ -1,0 +1,26 @@
+--- server.ts
++++ server.ts
+@@ -712,6 +712,23 @@
+   }
+ });
+ 
++app.get("/api/shows/:id/related", async (req, res) => {
++  const idParam = req.params.id; // Format: "movie-123" or "tv-456" or "series-456"
++  const [rawType, id] = idParam.split('-');
++  const type = rawType === 'series' ? 'tv' : rawType;
++  
++  if (!type || !id) {
++    return res.status(400).json({ error: "Invalid ID format" });
++  }
++
++  try {
++    const endpoint = type === "movie" ? `/movie/${id}/similar` : `/tv/${id}/similar`;
++    const data = await fetchTmdb(endpoint, { language: "en-US", page: 1 });
++    return res.json((data.results || []).map((item: any) => normalizeTmdbShow(item, type as "movie" | "tv")));
++  } catch {
++    return res.json([]);
++  }
++});
++
+ app.get("/api/tv/:id/season/:seasonNumber", async (req, res) => {
+   const { id, seasonNumber } = req.params;

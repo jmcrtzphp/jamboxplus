@@ -1,0 +1,8 @@
+{
+  "name": "JamBox+",
+  "description": "Jambox+ is a modern video streaming platform where you can discover, watch, and enjoy entertainment anytime, anywhere. Browse a growing selection of movies, shows, videos, and exclusive content—all in one convenient place.\n\nWith a simple and engaging viewing experience, Jambox+ makes it easy to find something you love, keep track of what you’re watching, and enjoy entertainment on your own terms.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
