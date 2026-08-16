@@ -235,10 +235,8 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv'): any {
   };
 }
 
-const USER_PROVIDED_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhY2YyOTBkYTViZGNkOWUzNzFmOTc5MTgyMDkxOGFhOSIsIm5iZiI6MTc4NTU4MDQ0My4wNzgsInN1YiI6IjZhNmRjYjliNjU2NGRlNDE2MWU5NzM2OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.KmzhU4vpKKJ7bq2CElU9sDNvGK_dOCQEBnKl3vo2-kU";
-
 function getCleanTmdbKey(): { key: string; isV3: boolean } | null {
-  let raw = USER_PROVIDED_TOKEN || process.env.TMDB_API_KEY?.trim();
+  let raw = process.env.TMDB_API_KEY?.trim();
   if (!raw) return null;
   if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1).trim();
