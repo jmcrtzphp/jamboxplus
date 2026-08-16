@@ -10,12 +10,51 @@ app.use(compression());
 const PORT = 3000;
 
 // Simple Site Visit Counter
+const VISITS_FILE = path.join(process.cwd(), "visits.json");
 let siteVisits = 14205; // Seeded with a fun number
+try {
+  if (fs.existsSync(VISITS_FILE)) {
+    siteVisits = JSON.parse(fs.readFileSync(VISITS_FILE, "utf-8")).visits || 14205;
+  }
+} catch (e) {
+  // ignore
+}
+
+function saveVisits() {
+  try {
+    fs.writeFileSync(VISITS_FILE, JSON.stringify({ visits: siteVisits }));
+  } catch (e) {
+    // ignore
+  }
+}
+
+const visitClients = new Set<express.Response>();
+
 app.get("/api/visits", (req, res) => {
+  if (req.headers.accept && req.headers.accept.includes("text/event-stream")) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    visitClients.add(res);
+    res.write(`data: ${JSON.stringify({ visits: siteVisits })}\n\n`);
+
+    req.on("close", () => {
+      visitClients.delete(res);
+    });
+    return;
+  }
   res.json({ visits: siteVisits });
 });
+
 app.post("/api/visits", (req, res) => {
   siteVisits++;
+  saveVisits();
+  
+  const data = `data: ${JSON.stringify({ visits: siteVisits })}\n\n`;
+  for (const client of visitClients) {
+    client.write(data);
+  }
+  
   res.json({ visits: siteVisits });
 });
 

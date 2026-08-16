@@ -6,23 +6,35 @@ export const Footer: React.FC = () => {
   const [visits, setVisits] = useState<number | null>(null);
 
   useEffect(() => {
+    let sse: EventSource | null = null;
+    
     const fetchVisits = async () => {
       try {
         const hasVisited = sessionStorage.getItem('has_visited');
-        const method = hasVisited ? 'GET' : 'POST';
-        const res = await fetch('/api/visits', { method });
-        if (res.ok) {
-          const data = await res.json();
-          setVisits(data.visits);
-          if (!hasVisited) {
-            sessionStorage.setItem('has_visited', 'true');
-          }
+        // If not visited this session, post to increment
+        if (!hasVisited) {
+          await fetch('/api/visits', { method: 'POST' });
+          sessionStorage.setItem('has_visited', 'true');
         }
+        
+        // Connect to SSE stream for live updates
+        sse = new EventSource('/api/visits');
+        sse.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          setVisits(data.visits);
+        };
       } catch (err) {
         // ignore
       }
     };
+    
     fetchVisits();
+    
+    return () => {
+      if (sse) {
+        sse.close();
+      }
+    };
   }, []);
 
   return (
