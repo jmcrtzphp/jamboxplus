@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Analytics } from '@vercel/analytics/react';
 import { Movies } from './components/Movies';
 
 const pageTransition = {
@@ -18,6 +19,7 @@ export default function App() {
            onNavigate={() => {}} 
          />
       </motion.div>
+      <Analytics />
     </AnimatePresence>
   );
 }
