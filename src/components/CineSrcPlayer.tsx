@@ -239,6 +239,7 @@ export function CineSrcPlayer({
       {/* Main CineSrc Iframe */}
       {playerUrl && !hasError ? (
         <iframe
+          id="cinesrc-iframe"
           key={`${playerUrl}-${retryKey}`}
           ref={iframeRef}
           src={playerUrl}

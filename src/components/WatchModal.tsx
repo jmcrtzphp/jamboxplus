@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { Play, X, Star, Check, Plus, ChevronLeft, ChevronRight, Layers, Clock, Calendar, Bookmark, RotateCcw, Sparkles, ExternalLink, Loader2, Film, Tv, Maximize, Minimize, RotateCw, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Show, Episode, SeasonDetails, fetchShowDetails, fetchSeasonDetails, fetchRelatedShows } from '../lib/tmdb';
@@ -53,7 +54,7 @@ export function WatchModal({
 
   // Fullscreen and Screen Orientation Lock Helpers
   const enterFullscreenAndLandscape = useCallback(async () => {
-    const playerContainer = document.getElementById('player-stage-container');
+    const playerContainer = document.getElementById('cinesrc-iframe') || document.documentElement;
     if (playerContainer) {
       try {
         if (playerContainer.requestFullscreen) {
@@ -268,20 +269,20 @@ export function WatchModal({
   const handleSelectEpisode = useCallback((epNum: number) => {
     setSelectedEpisode(epNum);
     setResumeStartAt(0);
-    setIsPlaying(true);
-    setTimeout(() => {
-      enterFullscreenAndLandscape();
-    }, 120);
+    flushSync(() => {
+      setIsPlaying(true);
+    });
+    enterFullscreenAndLandscape();
   }, [enterFullscreenAndLandscape]);
 
   const handleStartPlayback = useCallback((resume: boolean = true) => {
     if (!resume) {
       setResumeStartAt(0);
     }
-    setIsPlaying(true);
-    setTimeout(() => {
-      enterFullscreenAndLandscape();
-    }, 120);
+    flushSync(() => {
+      setIsPlaying(true);
+    });
+    enterFullscreenAndLandscape();
   }, [enterFullscreenAndLandscape]);
 
   const handleStopPlayback = useCallback(() => {
@@ -412,24 +413,7 @@ export function WatchModal({
                         <RotateCw className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
                       </button>
 
-                      {/* Fullscreen Toggle */}
-                      <button
-                        onClick={handleToggleFullscreen}
-                        className="px-3 py-1.5 rounded-xl glass-button-primary text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-                        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen & Landscape"}
-                      >
-                        {isFullscreen ? (
-                          <>
-                            <Minimize className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
-                            <span className="hidden sm:inline">Exit Fullscreen</span>
-                          </>
-                        ) : (
-                          <>
-                            <Maximize className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
-                            <span className="hidden sm:inline">Fullscreen</span>
-                          </>
-                        )}
-                      </button>
+
 
                       <button
                         onClick={handleCloseModal}
