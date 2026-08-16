@@ -51,10 +51,27 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
 
   const handleSelectMovie = useCallback((id: string) => {
     setSelectedMovieId(id);
+    window.history.pushState({ modalOpen: true, id }, '', `#title=${id}`);
   }, []);
 
   const handleCloseModal = useCallback(() => {
-    setSelectedMovieId(null);
+    if (window.history.state?.modalOpen) {
+      window.history.back(); // Let the popstate listener handle setting selectedMovieId to null
+    } else {
+      setSelectedMovieId(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (!e.state?.modalOpen) {
+        setSelectedMovieId(null);
+      } else if (e.state?.id) {
+        setSelectedMovieId(e.state.id);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   return (

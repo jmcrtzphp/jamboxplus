@@ -245,7 +245,7 @@ function getCleanTmdbKey(): { key: string; isV3: boolean } | null {
     raw = raw.slice(7).trim();
   }
   if (!raw) return null;
-  const isV3 = raw.length === 32;
+  const isV3 = raw.length === 32 || !raw.includes('.');
   return { key: raw, isV3 };
 }
 

@@ -41,6 +41,15 @@ export function WatchModal({
   const [savedProgress, setSavedProgress] = useState<WatchProgressItem | null>(null);
   const [resumeStartAt, setResumeStartAt] = useState<number>(0);
 
+  // Lock body scroll
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // Fullscreen and Screen Orientation Lock Helpers
   const enterFullscreenAndLandscape = useCallback(async () => {
     const playerContainer = document.getElementById('player-stage-container');
@@ -308,14 +317,14 @@ export function WatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 overflow-hidden">
-      {/* Dim Backdrop Overlay */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 md:p-6 lg:p-8 overflow-hidden bg-[#0A0C10] sm:bg-transparent">
+      {/* Dim Backdrop Overlay - Hidden on mobile to feel like a separate page */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        className="absolute inset-0 bg-black/85 backdrop-blur-xl"
+        className="hidden sm:block absolute inset-0 bg-black/85 backdrop-blur-xl"
         onClick={handleCloseModal}
       />
 
@@ -324,20 +333,20 @@ export function WatchModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
-        style={{ borderRadius: '28px' }}
-        className="relative w-full max-w-6xl max-h-[95vh] glass-strong border border-white/20 overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.9)] flex flex-col z-10 text-white"
+        className="relative w-full h-full sm:h-auto sm:max-h-[95vh] max-w-6xl bg-[#0A0C10] sm:glass-strong sm:border sm:border-white/20 sm:rounded-[28px] overflow-hidden sm:shadow-[0_30px_90px_rgba(0,0,0,0.9)] flex flex-col z-10 text-white"
       >
-        {/* Top Edge Specular Highlight */}
-        <div className="absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-100 via-white to-transparent pointer-events-none blur-[0.2px] z-30" />
+        {/* Top Edge Specular Highlight - Desktop Only */}
+        <div className="hidden sm:block absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-100 via-white to-transparent pointer-events-none blur-[0.2px] z-30" />
 
-        {/* Floating Close Button (when not in full video player mode) */}
+        {/* Floating Close/Back Button (when not in full video player mode) */}
         {!isPlaying && (
           <button
             onClick={handleCloseModal}
-            className="absolute top-4 right-4 z-40 p-2.5 rounded-full glass-subtle hover:bg-white/20 text-white/80 hover:text-white transition-all cursor-pointer shadow-lg"
-            title="Close"
+            className="absolute top-4 left-4 sm:left-auto sm:right-4 z-40 p-2.5 rounded-full bg-black/50 sm:glass-subtle hover:bg-black/70 sm:hover:bg-white/20 text-white transition-all cursor-pointer shadow-lg backdrop-blur-md"
+            title="Back / Close"
           >
-            <X size={20} />
+            <ArrowLeft className="sm:hidden block w-5 h-5" />
+            <X className="hidden sm:block w-5 h-5" />
           </button>
         )}
 
