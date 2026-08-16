@@ -9,6 +9,16 @@ const app = express();
 app.use(compression());
 const PORT = 3000;
 
+// Simple Site Visit Counter
+let siteVisits = 14205; // Seeded with a fun number
+app.get("/api/visits", (req, res) => {
+  res.json({ visits: siteVisits });
+});
+app.post("/api/visits", (req, res) => {
+  siteVisits++;
+  res.json({ visits: siteVisits });
+});
+
 const EPG_URL = "https://raw.githubusercontent.com/djdoolky76/Mediaquest-EPG/main/cignal_epg.xml";
 let epgCache: any = {};
 let lastFetchTime = 0;

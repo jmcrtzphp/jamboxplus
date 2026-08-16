@@ -1,7 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { JamBoxText } from './Logo';
+import { Eye } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const [visits, setVisits] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchVisits = async () => {
+      try {
+        const hasVisited = sessionStorage.getItem('has_visited');
+        const method = hasVisited ? 'GET' : 'POST';
+        const res = await fetch('/api/visits', { method });
+        if (res.ok) {
+          const data = await res.json();
+          setVisits(data.visits);
+          if (!hasVisited) {
+            sessionStorage.setItem('has_visited', 'true');
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchVisits();
+  }, []);
+
   return (
     <footer className="w-full bg-[#080A0E] border-t border-white/5 pt-16 pb-24 md:pb-8 mt-24 relative z-10">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -48,8 +71,15 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/40 text-xs">
-            &copy; 2026 JamBox+. All rights reserved.
+          <p className="text-white/40 text-xs flex items-center gap-4">
+            <span>&copy; 2026 JamBox+. All rights reserved.</span>
+            {visits !== null && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
+                <Eye className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-white/60 font-mono tracking-widest">{visits.toLocaleString()}</span>
+                <span className="sr-only">Visits</span>
+              </span>
+            )}
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-white/40 hover:text-amber-500 text-xs transition-colors">Privacy</a>
