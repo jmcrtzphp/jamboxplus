@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fullstack-movie-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: TMDB_API_KEY
+        sync: false
