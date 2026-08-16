@@ -370,6 +370,8 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
         if (isMounted && res.shows.length > 0) {
           setHeroMovies(res.shows.slice(0, 5));
         }
+      }).catch(err => {
+        console.error("HeroBanner fetch error:", err);
       }).finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -385,8 +387,12 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
     return () => clearInterval(interval);
   }, [heroMovies]);
 
-  if (loading || !heroMovies || heroMovies.length === 0) {
+  if (loading) {
     return <div className="h-[70vh] md:h-[80vh] w-full bg-[#14161B] animate-pulse" />;
+  }
+
+  if (!heroMovies || heroMovies.length === 0) {
+    return null; // Fallback so we don't crash or spin forever
   }
 
   const currentMovie = heroMovies[activeIndex];
@@ -503,6 +509,8 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
     setLoading(true);
     fetcher().then((res: any) => {
       if (isMounted) setShows(res.shows);
+    }).catch((err: any) => {
+      console.error("CategoryRow fetch error:", err);
     }).finally(() => {
       if (isMounted) setLoading(false);
     });
