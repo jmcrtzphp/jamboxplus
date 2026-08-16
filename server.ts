@@ -236,7 +236,7 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv'): any {
 }
 
 function getCleanTmdbKey(): { key: string; isV3: boolean } | null {
-  let raw = process.env.TMDB_API_KEY?.trim();
+  let raw = process.env.TMDB_API_KEY?.trim() || process.env.VITE_TMDB_API_KEY?.trim();
   if (!raw) return null;
   if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1).trim();

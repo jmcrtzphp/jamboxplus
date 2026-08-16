@@ -1,0 +1,12 @@
+                ) : (
+                  <div className="text-sm text-white/40 italic">No recommendations found.</div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        ) : null}
+      </motion.div>
+    </div>
+  );
+}

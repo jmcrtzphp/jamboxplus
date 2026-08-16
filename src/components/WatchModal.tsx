@@ -3,6 +3,7 @@ import { Play, X, Star, Check, Plus, ChevronLeft, ChevronRight, Layers, Clock, C
 import { motion, AnimatePresence } from 'motion/react';
 import { Show, Episode, SeasonDetails, fetchShowDetails, fetchSeasonDetails, fetchRelatedShows } from '../lib/tmdb';
 import { CineSrcPlayer } from './CineSrcPlayer';
+import { Footer } from './Footer';
 import { getWatchProgress, WatchProgressItem, removeWatchProgress } from '../lib/cinesrc';
 import { GlassButton, GlassPill, GlassIconButton, GlassContainer } from './liquid-glass';
 
@@ -379,7 +380,7 @@ export function WatchModal({
                         className="px-3 py-1.5 rounded-xl glass-subtle hover:glass-medium text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
                         title="Back to Details"
                       >
-                        <ArrowLeft size={15} />
+                        <ArrowLeft className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
                         <span className="hidden sm:inline">Back to Details</span>
                       </button>
 
@@ -399,7 +400,7 @@ export function WatchModal({
                         className="p-2 rounded-xl glass-subtle hover:glass-medium text-white/80 hover:text-white transition-all cursor-pointer flex sm:hidden items-center justify-center shadow-md"
                         title="Rotate to Landscape"
                       >
-                        <RotateCw size={15} />
+                        <RotateCw className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
                       </button>
 
                       {/* Fullscreen Toggle */}
@@ -410,12 +411,12 @@ export function WatchModal({
                       >
                         {isFullscreen ? (
                           <>
-                            <Minimize size={15} />
+                            <Minimize className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
                             <span className="hidden sm:inline">Exit Fullscreen</span>
                           </>
                         ) : (
                           <>
-                            <Maximize size={15} />
+                            <Maximize className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
                             <span className="hidden sm:inline">Fullscreen</span>
                           </>
                         )}
@@ -426,7 +427,7 @@ export function WatchModal({
                         className="p-1.5 rounded-xl glass-subtle hover:bg-white/20 text-white/80 hover:text-white transition-all cursor-pointer shadow-md"
                         title="Close Modal"
                       >
-                        <X size={17} />
+                        <X className="w-4 h-4 sm:w-[17px] sm:h-[17px]" />
                       </button>
                     </div>
                   </div>
@@ -461,7 +462,7 @@ export function WatchModal({
                               : 'opacity-40 text-white/40 cursor-not-allowed'
                           }`}
                         >
-                          <ChevronLeft size={16} /> Prev Episode
+                          <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Prev Episode
                         </button>
 
                         <button
@@ -473,7 +474,7 @@ export function WatchModal({
                               : 'opacity-40 text-white/40 cursor-not-allowed'
                           }`}
                         >
-                          Next Episode <ChevronRight size={16} />
+                          Next Episode <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                       </div>
 
@@ -507,7 +508,7 @@ export function WatchModal({
                 <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 z-20">
                   <div className="flex flex-wrap items-center gap-2.5 mb-3 text-xs sm:text-sm font-semibold">
                     <span className="text-yellow-400 font-bold bg-yellow-400/20 border border-yellow-400/30 px-2.5 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1">
-                      <Star size={12} className="fill-yellow-400" /> {rating}
+                      <Star className="w-3 h-3 sm:w-[12px] sm:h-[12px] fill-yellow-400" /> {rating}
                     </span>
                     <span>{show.releaseYear}</span>
                     {show.runtime && <span>• {show.runtime}m</span>}
@@ -528,7 +529,7 @@ export function WatchModal({
                       onClick={() => handleStartPlayback(true)}
                       className="cursor-pointer shadow-[0_0_25px_rgba(245,158,11,0.5)]"
                     >
-                      <Play size={18} className="fill-white" />
+                      <Play className="w-4 h-4 sm:w-[18px] sm:h-[18px] fill-white" />
                       {savedProgress && savedProgress.currentTime > 15 && savedProgress.percentage < 92
                         ? `Resume (${formatSeconds(savedProgress.currentTime)})`
                         : (isMovie ? 'Play Movie' : `Play S${selectedSeason}:E${selectedEpisode}`)}
@@ -541,7 +542,7 @@ export function WatchModal({
                         onClick={() => handleStartPlayback(false)}
                         className="cursor-pointer text-xs"
                       >
-                        <RotateCcw size={15} /> Play from Start
+                        <RotateCcw className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" /> Play from Start
                       </GlassButton>
                     )}
 
@@ -551,7 +552,7 @@ export function WatchModal({
                       onClick={(e) => onToggleFavorite(e, show.id)}
                       className="cursor-pointer"
                     >
-                      {isFavorite ? <Check size={16} className="text-green-400" /> : <Plus size={16} />}
+                      {isFavorite ? <Check className="w-4 h-4 sm:w-[16px] sm:h-[16px] text-green-400" /> : <Plus className="w-4 h-4 sm:w-[16px] sm:h-[16px]" />}
                       {isFavorite ? 'In Favorites' : 'Add to Favorites'}
                     </GlassButton>
                   </div>
@@ -568,7 +569,7 @@ export function WatchModal({
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 glass-button-primary rounded-xl flex items-center justify-center">
-                        <Tv size={16} className="text-white" />
+                        <Tv className="w-3.5 h-3.5 sm:w-[16px] sm:h-[16px] text-white" />
                       </div>
                       <div>
                         <h3 className="text-lg font-bold text-white tracking-tight">Episodes</h3>
@@ -657,7 +658,7 @@ export function WatchModal({
                                     ? 'bg-amber-600 text-white scale-110 shadow-lg'
                                     : 'bg-black/60 text-white/90 group-hover:scale-110 border border-white/20'
                                 }`}>
-                                  <Play size={15} className="ml-0.5 fill-current" />
+                                  <Play className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px] ml-0.5 fill-current" />
                                 </div>
                               </div>
 
@@ -749,7 +750,7 @@ export function WatchModal({
                       }}
                       className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-r-2xl hidden md:flex items-center justify-center opacity-0 group-hover/related:opacity-100 transition-opacity duration-200 cursor-pointer"
                     >
-                      <ChevronLeft size={24} className="text-white" />
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </button>
                     
                     <motion.div 
@@ -807,15 +808,16 @@ export function WatchModal({
                       }}
                       className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-l-2xl hidden md:flex items-center justify-center opacity-0 group-hover/related:opacity-100 transition-opacity duration-200 cursor-pointer"
                     >
-                      <ChevronRight size={24} className="text-white" />
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </button>
                   </div>
                 ) : (
                   <div className="text-sm text-white/40 italic">No recommendations found.</div>
                 )}
               </div>
-
             </div>
+            
+            <Footer />
           </div>
         ) : null}
       </motion.div>

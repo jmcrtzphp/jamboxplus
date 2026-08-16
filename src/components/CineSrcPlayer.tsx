@@ -227,7 +227,7 @@ export function CineSrcPlayer({
   }, []);
 
   return (
-    <div className={`relative w-full aspect-video bg-[#0B0C10] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 select-none ${className}`}>
+    <div className={`relative w-full min-h-[320px] aspect-[4/3] sm:min-h-0 sm:aspect-video bg-[#0B0C10] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 select-none ${className}`}>
       {/* Background Poster Blur for smooth aesthetics */}
       {(backdrop || poster) && (
         <div 
@@ -271,7 +271,7 @@ export function CineSrcPlayer({
 
             <div className="space-y-1.5 max-w-sm">
               <p className="text-white font-bold text-base tracking-wide flex items-center justify-center gap-2">
-                {type === 'movie' ? <Film size={16} className="text-amber-500" /> : <Tv size={16} className="text-amber-500" />}
+                {type === 'movie' ? <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" /> : <Tv className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />}
                 Connecting to CineSrc Stream
               </p>
               {title && (
@@ -294,7 +294,7 @@ export function CineSrcPlayer({
             className="absolute inset-0 z-30 bg-[#0c0e14]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center space-y-4"
           >
             <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shadow-lg shadow-red-500/10">
-              <AlertCircle size={28} />
+              <AlertCircle className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
 
             <div className="max-w-md space-y-1.5">
@@ -311,7 +311,7 @@ export function CineSrcPlayer({
                 onClick={handleRetry}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <RefreshCw size={14} /> Retry Player
+                <RefreshCw className="w-3 h-3 sm:w-[14px] sm:h-[14px]" /> Retry Player
               </GlassButton>
             </div>
           </motion.div>
@@ -342,7 +342,7 @@ export function CineSrcPlayer({
                 className="p-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors cursor-pointer"
                 title="Play Next Episode Now"
               >
-                <SkipForward size={16} />
+                <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={handleCancelAutoNext}
