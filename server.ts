@@ -3,8 +3,10 @@ dotenv.config({ override: true });
 import express from "express";
 import path from "path";
 import fs from "fs";
+import compression from "compression";
 
 const app = express();
+app.use(compression());
 const PORT = 3000;
 
 const EPG_URL = "https://raw.githubusercontent.com/djdoolky76/Mediaquest-EPG/main/cignal_epg.xml";
@@ -874,7 +876,14 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '1y',
+      setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

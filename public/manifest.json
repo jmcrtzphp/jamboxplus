@@ -1,0 +1,16 @@
+{
+  "name": "JamBox+",
+  "short_name": "JamBox+",
+  "description": "Premium Streaming Aggregator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F1113",
+  "theme_color": "#0B0C10",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
