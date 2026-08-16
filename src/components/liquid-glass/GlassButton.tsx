@@ -20,7 +20,7 @@ export function GlassButton({
   const sizeClasses = {
     sm: 'px-3.5 py-1.5 text-xs font-medium gap-1.5 rounded-full',
     md: 'px-5 py-2.5 text-sm font-semibold gap-2 rounded-full',
-    lg: 'px-7 py-3.5 text-base font-bold gap-2.5 rounded-full'
+    lg: 'px-8 py-4 text-base font-bold gap-3 rounded-full'
   }[size];
 
   const variantClasses = {

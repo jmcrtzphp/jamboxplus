@@ -1,0 +1,1 @@
+sed -i 's/startServer();/app.get("\/api\/genres\/images", async (req, res) => {});\n\n\/\/ Kick off the fetch immediately\nfetch("http:\/\/127.0.0.1:3000\/api\/genres\/images").catch(() => {});\n\nstartServer();/g' server.ts

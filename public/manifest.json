@@ -1,7 +1,7 @@
 {
   "name": "JamBox+",
   "short_name": "JamBox+",
-  "description": "Premium Streaming Aggregator",
+  "description": "CineVault",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F1113",

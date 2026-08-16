@@ -150,7 +150,7 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
     return inFlightRequests.get(cacheKey);
   }
   
-  const url = `/api${endpoint}${query.toString() ? '?' + query.toString() : ''}`;
+  const url = `/api${endpoint}${query.toString() ? '?' + query.toString() : ''}`; console.log("FETCH URL:", url);
   
   const requestPromise = (async () => {
     try {

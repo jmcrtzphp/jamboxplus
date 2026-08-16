@@ -1,5 +1,4 @@
-import React,
- { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Search, X, Film, Tv, Radio, Bookmark } from 'lucide-react';
 import { Logo, JamBoxText } from './Logo';
 import { motion, AnimatePresence } from 'motion/react';
@@ -59,7 +58,7 @@ function makeMap(w: number, h: number, radius: number, border: number, mapBlur: 
 export interface FloatingNavProps {
   onBack: () => void;
   activeTab: string;
-  setActiveTab: (tab: any) => void;
+  setActiveTab: (tab: string) => void;
   isSearchExpanded: boolean;
   setIsSearchExpanded: (expanded: boolean) => void;
   searchQuery: string;
@@ -321,7 +320,7 @@ export function FloatingNav({
                   <input
                     autoFocus
                     type="text"
-                    placeholder="Search titles, actors, genres..."
+                    placeholder="Search movies & shows..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -331,7 +330,7 @@ export function FloatingNav({
                   />
                   <button 
                     onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); setActiveTab('movies'); }}
-                    className="absolute right-2 text-white/50 hover:text-white p-1 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-full"
+                    className="absolute right-2 text-white/50 hover:text-white"
                   >
                     <X size={14} />
                   </button>
@@ -376,7 +375,7 @@ export function FloatingNav({
       </div>
 
       {/* Mobile Floating Bottom Nav */}
-      <div className="sm:hidden fixed bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none">
+      <div className="sm:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
         <div 
           ref={bottomNavRef}
           className="pointer-events-auto flex items-center justify-around w-full max-w-sm rounded-full p-2 transition-opacity duration-[260ms] ease-out"

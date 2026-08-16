@@ -1,0 +1,96 @@
+cat << 'INNER_EOF' > replacement.txt
+
+app.get("/api/movies", async (req, res) => {
+  try {
+    const data = await fetchTmdb("/discover/movie", req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, 'movie'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE') {
+       return res.json({ shows: FALLBACK_MOVIES.map(s => normalizeTmdbShow(s, 'movie')), hasMore: false });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/tv-shows", async (req, res) => {
+  try {
+    const data = await fetchTmdb("/discover/tv", req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, 'tv'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE') {
+       return res.json({ shows: FALLBACK_SHOWS.map(s => normalizeTmdbShow(s, 'tv')), hasMore: false });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/discover", async (req, res) => {
+  try {
+    const isTv = req.query.with_networks || req.query.first_air_date_year || req.query.with_type || req.query.show_type === 'series';
+    const endpoint = isTv ? "/discover/tv" : "/discover/movie";
+    const data = await fetchTmdb(endpoint, req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, isTv ? 'tv' : 'movie'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE') {
+       return res.json({ shows: [...FALLBACK_MOVIES, ...FALLBACK_SHOWS].map(s => normalizeTmdbShow(s)), hasMore: false });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/search", async (req, res) => {
+  try {
+    const data = await fetchTmdb("/search/multi", req.query as any);
+    const shows = (data.results || []).filter((s:any) => s.media_type !== 'person').map((s: any) => normalizeTmdbShow(s));
+    res.json(shows);
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE') {
+       return res.json([...FALLBACK_MOVIES, ...FALLBACK_SHOWS].map(s => normalizeTmdbShow(s)));
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/shows/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [type, ...rest] = id.split('-');
+    const realId = rest.join('-');
+    const data = await fetchTmdb(`/${type === 'series' || type === 'tv' ? 'tv' : 'movie'}/${realId}`, { append_to_response: 'credits,videos,watch/providers' });
+    res.json(normalizeTmdbShow(data, type === 'series' || type === 'tv' ? 'tv' : 'movie'));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/shows/:id/related", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [type, ...rest] = id.split('-');
+    const realId = rest.join('-');
+    const data = await fetchTmdb(`/${type === 'series' || type === 'tv' ? 'tv' : 'movie'}/${realId}/similar`, req.query as any);
+    res.json((data.results || []).map((s: any) => normalizeTmdbShow(s, type === 'series' || type === 'tv' ? 'tv' : 'movie')));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/tv/:id/season/:seasonNumber", async (req, res) => {
+  try {
+    const { id, seasonNumber } = req.params;
+    const data = await fetchTmdb(`/tv/${id}/season/${seasonNumber}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+async function startServer() {
+INNER_EOF
+
+sed -i '/async function startServer() {/c\
+'"$(cat replacement.txt | sed 's/\\/\\\\/g' | sed 's/$/\\/g')"'' server.ts
+sed -i 's/\\$//' server.ts

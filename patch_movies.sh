@@ -1,0 +1,1 @@
+sed -i 's/import { GlassButton, GlassPill, GlassContainer, Glass } from '\''\.\/liquid-glass'\'';/import { GlassButton, GlassPill, GlassContainer } from '\''.\/liquid-glass'\'';/g' src/components/Movies.tsx

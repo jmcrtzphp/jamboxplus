@@ -268,7 +268,7 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv'): any {
       poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : item.imageSet?.poster,
       horizontalPoster: {
         w1080: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : item.imageSet?.horizontalPoster?.w1080,
-        w720: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : item.imageSet?.horizontalPoster?.w720
+        w720: item.backdrop_path ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}` : item.imageSet?.horizontalPoster?.w720
       }
     },
     streamingOptions,
@@ -526,403 +526,163 @@ async function fetchTmdb(endpoint: string, queryParams: Record<string, string | 
   return data;
 }
 
+
+let cachedGenreImages: Record<string, string> | null = null;
+let fetchingGenreImagesPromise: Promise<Record<string, string>> | null = null;
+
+function fetchGenreImagesInternal() {
+  if (cachedGenreImages) return Promise.resolve(cachedGenreImages);
+  if (!fetchingGenreImagesPromise) {
+    fetchingGenreImagesPromise = (async () => {
+      const movieGenres = [28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53, 10752, 37];
+      const tvGenres = [10762, 10763, 10764, 10766, 10767];
+      const results: Record<string, string> = {};
+      const promises = [];
+
+      for (const mg of movieGenres) {
+        promises.push(
+          fetchTmdb("/discover/movie", { with_genres: mg, page: 1, sort_by: "popularity.desc" })
+            .then(data => {
+              if (data.results && data.results.length > 0) {
+                const item = data.results.find((r: any) => r.backdrop_path) || data.results[0];
+                if (item && item.backdrop_path) {
+                  results[`movie_${mg}`] = `https://image.tmdb.org/t/p/w500${item.backdrop_path}`;
+                }
+              }
+            }).catch(console.error)
+        );
+      }
+      for (const tg of tvGenres) {
+        promises.push(
+          fetchTmdb("/discover/tv", { with_genres: tg, page: 1, sort_by: "popularity.desc" })
+            .then(data => {
+              if (data.results && data.results.length > 0) {
+                const item = data.results.find((r: any) => r.backdrop_path) || data.results[0];
+                if (item && item.backdrop_path) {
+                  results[`tv_${tg}`] = `https://image.tmdb.org/t/p/w500${item.backdrop_path}`;
+                }
+              }
+            }).catch(console.error)
+        );
+      }
+      await Promise.all(promises);
+      cachedGenreImages = results;
+      return results;
+    })();
+  }
+  return fetchingGenreImagesPromise;
+}
+
 app.get("/api/genres/images", async (req, res) => {
   try {
-    const movieGenres = [28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53, 10752, 37];
-    const tvGenres = [10762, 10763, 10764, 10766, 10767];
-
-    const results: Record<string, string> = {};
-
-    const promises = [];
-
-    for (const mg of movieGenres) {
-      promises.push(
-        fetchTmdb("/discover/movie", { with_genres: mg, page: 1, sort_by: "popularity.desc" })
-          .then(data => {
-            if (data.results && data.results.length > 0) {
-              const item = data.results.find((r: any) => r.backdrop_path) || data.results[0];
-              if (item && item.backdrop_path) {
-                results[`movie_${mg}`] = `https://image.tmdb.org/t/p/w780${item.backdrop_path}`;
-              }
-            }
-          }).catch(console.error)
-      );
-    }
-
-    for (const tg of tvGenres) {
-      promises.push(
-        fetchTmdb("/discover/tv", { with_genres: tg, page: 1, sort_by: "popularity.desc" })
-          .then(data => {
-            if (data.results && data.results.length > 0) {
-              const item = data.results.find((r: any) => r.backdrop_path) || data.results[0];
-              if (item && item.backdrop_path) {
-                results[`tv_${tg}`] = `https://image.tmdb.org/t/p/w780${item.backdrop_path}`;
-              }
-            }
-          }).catch(console.error)
-      );
-    }
-
-    await Promise.all(promises);
-
+    const results = await fetchGenreImagesInternal();
     res.json(results);
   } catch (error) {
     console.error("Genre Images Error:", error);
+    fetchingGenreImagesPromise = null;
     res.status(500).json({ error: "Failed to fetch genre images" });
   }
 });
 
+
 app.get("/api/movies", async (req, res) => {
-  const country = (req.query.country as string || "US").toUpperCase();
-  const catalogs = req.query.catalogs as string;
-  const inTheaters = req.query.in_theaters === "true";
-  const genres = req.query.genres as string;
-  const page = parseInt(req.query.cursor as string || "1", 10);
-
   try {
-    let endpoint = "/movie/popular";
-    let params: any = { language: "en-US", page, region: country };
-
-    if (inTheaters) {
-      endpoint = "/movie/now_playing";
-    } else if (catalogs) {
-      endpoint = "/discover/movie";
-      params.watch_region = country;
-      params.with_watch_providers = catalogs;
-      params.sort_by = "popularity.desc";
-    } else if (genres) {
-      endpoint = "/discover/movie";
-      params.with_genres = genres;
-      params.sort_by = "popularity.desc";
-      params.region = country;
+    const data = await fetchTmdb("/discover/movie", req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, 'movie'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE' || (error as any).status === 401 || (error as any).status === 403) {
+       return res.json({ shows: FALLBACK_MOVIES.map(s => normalizeTmdbShow(s, 'movie')), hasMore: false });
     }
-
-    const data = await fetchTmdb(endpoint, params);
-    return res.json({
-      hasMore: data.page < data.total_pages,
-      nextCursor: String(data.page + 1),
-      shows: (data.results || []).map((item: any) => normalizeTmdbShow(item, "movie"))
-    });
-
-  } catch {
-    // Serve curated fallback dataset
-    let filtered = FALLBACK_MOVIES;
-    if (inTheaters) {
-      filtered = FALLBACK_MOVIES.filter(m => m.in_theaters);
-      if (filtered.length === 0) filtered = FALLBACK_MOVIES;
-    } else if (catalogs) {
-      const match = FALLBACK_MOVIES.filter(m => m.providerIds?.includes(catalogs));
-      filtered = match.length > 0 ? match : FALLBACK_MOVIES;
-    } else if (genres) {
-      const gList = genres.split(',').map(s => s.trim());
-      const match = FALLBACK_MOVIES.filter(m => m.genres?.some((g: any) => gList.includes(String(g.id))));
-      filtered = match.length > 0 ? match : FALLBACK_MOVIES;
-    }
-    return res.json({
-      hasMore: false,
-      nextCursor: undefined,
-      shows: filtered.map((item: any) => normalizeTmdbShow(item, "movie"))
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.get("/api/tv-shows", async (req, res) => {
-  const country = (req.query.country as string || "US").toUpperCase();
-  const catalogs = req.query.catalogs as string;
-  const genres = req.query.genres as string;
-  const page = parseInt(req.query.cursor as string || "1", 10);
-
   try {
-    let endpoint = "/tv/popular";
-    let params: any = { language: "en-US", page };
-
-    if (req.query.in_theaters === "true") {
-      endpoint = "/movie/now_playing";
-    } else if (catalogs) {
-      endpoint = "/discover/tv";
-      params.watch_region = country;
-      params.with_watch_providers = catalogs;
-      params.sort_by = "popularity.desc";
-    } else if (genres) {
-      endpoint = "/discover/tv";
-      params.with_genres = genres;
-      params.sort_by = "popularity.desc";
-      params.watch_region = country;
+    const data = await fetchTmdb("/discover/tv", req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, 'tv'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE' || (error as any).status === 401 || (error as any).status === 403) {
+       return res.json({ shows: FALLBACK_SHOWS.map(s => normalizeTmdbShow(s, 'tv')), hasMore: false });
     }
-
-    const data = await fetchTmdb(endpoint, params);
-    return res.json({
-      hasMore: data.page < data.total_pages,
-      nextCursor: String(data.page + 1),
-      shows: (data.results || []).map((item: any) => normalizeTmdbShow(item, "tv"))
-    });
-
-  } catch {
-    let filtered = FALLBACK_SHOWS;
-    if (catalogs) {
-      const match = FALLBACK_SHOWS.filter(s => s.providerIds?.includes(catalogs));
-      filtered = match.length > 0 ? match : FALLBACK_SHOWS;
-    } else if (genres) {
-      const gList = genres.split(',').map(s => s.trim());
-      const match = FALLBACK_SHOWS.filter(s => s.genres?.some((g: any) => gList.includes(String(g.id))));
-      filtered = match.length > 0 ? match : FALLBACK_SHOWS;
-    }
-    return res.json({
-      hasMore: false,
-      nextCursor: undefined,
-      shows: filtered.map((item: any) => normalizeTmdbShow(item, "tv"))
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.get("/api/discover", async (req, res) => {
-  const country = (req.query.country as string || "US").toUpperCase();
-  const movieGenre = (req.query.movie_genre && req.query.movie_genre !== 'null') ? req.query.movie_genre as string : undefined;
-  const tvGenre = (req.query.tv_genre && req.query.tv_genre !== 'null') ? req.query.tv_genre as string : undefined;
-  const showType = (req.query.show_type as string) || "all";
-  const page = parseInt(req.query.cursor as string || "1", 10);
-
   try {
-    if (showType === "movie") {
-      const data = await fetchTmdb("/discover/movie", {
-        with_genres: movieGenre,
-        sort_by: "popularity.desc",
-        region: country,
-        page,
-        language: "en-US"
-      });
-      return res.json({
-        hasMore: data.page < data.total_pages,
-        nextCursor: String(data.page + 1),
-        shows: (data.results || []).map((item: any) => normalizeTmdbShow(item, "movie"))
-      });
-    } else if (showType === "series") {
-      const data = await fetchTmdb("/discover/tv", {
-        with_genres: tvGenre,
-        sort_by: "popularity.desc",
-        watch_region: country,
-        page,
-        language: "en-US"
-      });
-      return res.json({
-        hasMore: data.page < data.total_pages,
-        nextCursor: String(data.page + 1),
-        shows: (data.results || []).map((item: any) => normalizeTmdbShow(item, "tv"))
-      });
-    } else {
-      const [movieData, tvData] = await Promise.all([
-        movieGenre ? fetchTmdb("/discover/movie", { with_genres: movieGenre, sort_by: "popularity.desc", region: country, page, language: "en-US" }).catch(() => ({ results: [], page: 1, total_pages: 1 })) : Promise.resolve({ results: [], page: 1, total_pages: 1 }),
-        tvGenre ? fetchTmdb("/discover/tv", { with_genres: tvGenre, sort_by: "popularity.desc", watch_region: country, page, language: "en-US" }).catch(() => ({ results: [], page: 1, total_pages: 1 })) : Promise.resolve({ results: [], page: 1, total_pages: 1 })
-      ]);
-
-      const movies = (movieData.results || []).map((item: any) => normalizeTmdbShow(item, "movie"));
-      const tv = (tvData.results || []).map((item: any) => normalizeTmdbShow(item, "tv"));
-      const combined: any[] = [];
-      const maxLen = Math.max(movies.length, tv.length);
-      for (let i = 0; i < maxLen; i++) {
-        if (i < movies.length) combined.push(movies[i]);
-        if (i < tv.length) combined.push(tv[i]);
-      }
-      return res.json({
-        hasMore: (movieData.page < movieData.total_pages) || (tvData.page < tvData.total_pages),
-        nextCursor: String(page + 1),
-        shows: combined
-      });
+    const isTv = req.query.with_networks || req.query.first_air_date_year || req.query.with_type || req.query.show_type === 'series';
+    const endpoint = isTv ? "/discover/tv" : "/discover/movie";
+    const data = await fetchTmdb(endpoint, req.query as any);
+    const shows = (data.results || []).map((s: any) => normalizeTmdbShow(s, isTv ? 'tv' : 'movie'));
+    res.json({ shows, hasMore: data.page < data.total_pages, nextCursor: data.page + 1 });
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE' || (error as any).status === 401 || (error as any).status === 403) {
+       return res.json({ shows: [...FALLBACK_MOVIES, ...FALLBACK_SHOWS].map(s => normalizeTmdbShow(s)), hasMore: false });
     }
-  } catch {
-    const all = [...FALLBACK_MOVIES.map(m => normalizeTmdbShow(m, "movie")), ...FALLBACK_SHOWS.map(s => normalizeTmdbShow(s, "tv"))];
-    let filtered = all;
-    if (movieGenre || tvGenre) {
-      filtered = filtered.filter(s => {
-        if (s.showType === 'movie' && movieGenre && s.genres?.some(g => String(g.id) === String(movieGenre))) return true;
-        if (s.showType === 'series' && tvGenre && s.genres?.some(g => String(g.id) === String(tvGenre))) return true;
-        return false;
-      });
-    }
-    return res.json({
-      hasMore: false,
-      nextCursor: undefined,
-      shows: filtered
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.get("/api/search", async (req, res) => {
-  const title = req.query.title as string;
-  const page = parseInt(req.query.cursor as string || "1", 10);
-  const movieGenre = (req.query.movie_genre && req.query.movie_genre !== 'null') ? req.query.movie_genre as string : undefined;
-  const tvGenre = (req.query.tv_genre && req.query.tv_genre !== 'null') ? req.query.tv_genre as string : undefined;
-
   try {
-    if (title) {
-      const data = await fetchTmdb("/search/multi", { query: title, page, language: "en-US" });
-      let shows = (data.results || [])
-        .filter((i: any) => i.media_type === "movie" || i.media_type === "tv")
-        .map((item: any) => normalizeTmdbShow(item));
-
-      if (movieGenre || tvGenre) {
-        shows = shows.filter(s => {
-          if (s.showType === 'movie' && movieGenre && s.genres?.some(g => String(g.id) === String(movieGenre))) return true;
-          if (s.showType === 'series' && tvGenre && s.genres?.some(g => String(g.id) === String(tvGenre))) return true;
-          return false;
-        });
-      }
-
-      return res.json({
-        hasMore: data.page < data.total_pages,
-        nextCursor: String(data.page + 1),
-        shows
-      });
-    } else {
-      const data = await fetchTmdb("/trending/all/day", { page, language: "en-US" });
-      const shows = (data.results || [])
-        .filter((i: any) => i.media_type === "movie" || i.media_type === "tv")
-        .map((item: any) => normalizeTmdbShow(item));
-      return res.json({
-        hasMore: data.page < data.total_pages,
-        nextCursor: String(data.page + 1),
-        shows
-      });
+    const data = await fetchTmdb("/search/multi", req.query as any);
+    const shows = (data.results || []).filter((s:any) => s.media_type !== 'person').map((s: any) => normalizeTmdbShow(s));
+    res.json(shows);
+  } catch (error: any) {
+    if (error.message === 'TMDB_API_KEY_UNAVAILABLE' || (error as any).status === 401 || (error as any).status === 403) {
+       return res.json([...FALLBACK_MOVIES, ...FALLBACK_SHOWS].map(s => normalizeTmdbShow(s)));
     }
-  } catch {
-    const searchQ = (title || "").toLowerCase();
-    const all = [...FALLBACK_MOVIES.map(m => normalizeTmdbShow(m, "movie")), ...FALLBACK_SHOWS.map(s => normalizeTmdbShow(s, "tv"))];
-    let filtered = searchQ
-      ? all.filter(s => s.title.toLowerCase().includes(searchQ) || s.overview?.toLowerCase().includes(searchQ))
-      : all;
-      
-    if (movieGenre || tvGenre) {
-      filtered = filtered.filter(s => {
-        if (s.showType === 'movie' && movieGenre && s.genres?.some(g => String(g.id) === String(movieGenre))) return true;
-        if (s.showType === 'series' && tvGenre && s.genres?.some(g => String(g.id) === String(tvGenre))) return true;
-        return false;
-      });
-    }
-      
-    return res.json({
-      hasMore: false,
-      nextCursor: undefined,
-      shows: filtered
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.get("/api/shows/:id", async (req, res) => {
-  const idParam = req.params.id; // Format: "movie-123" or "tv-456" or "series-456"
-  const [rawType, id] = idParam.split('-');
-  const type = rawType === 'series' ? 'tv' : rawType;
-  if (type !== 'tv' && type !== 'movie') return res.status(400).json({ error: 'Invalid type' });
-  
-  if (!type || !id) {
-    return res.status(400).json({ error: "Invalid ID format" });
-  }
-
   try {
-    const endpoint = type === "movie" ? `/movie/${id}` : `/tv/${id}`;
-    const data = await fetchTmdb(endpoint, { append_to_response: "credits,watch/providers", language: "en-US" });
-    return res.json(normalizeTmdbShow(data, type as "movie" | "tv"));
-
-  } catch {
-    const isMovie = type === 'movie';
-    const idNum = parseInt(id, 10);
-    const match = (isMovie ? FALLBACK_MOVIES : FALLBACK_SHOWS).find(item => item.id === idNum) || (isMovie ? FALLBACK_MOVIES[0] : FALLBACK_SHOWS[0]);
-    return res.json(normalizeTmdbShow(match, isMovie ? "movie" : "tv"));
+    const { id } = req.params;
+    const [type, ...rest] = id.split('-');
+    const realId = rest.join('-');
+    const data = await fetchTmdb(`/${type === 'series' || type === 'tv' ? 'tv' : 'movie'}/${realId}`, { append_to_response: 'credits,videos,watch/providers' });
+    res.json(normalizeTmdbShow(data, type === 'series' || type === 'tv' ? 'tv' : 'movie'));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/shows/:id/related', async (req, res) => {
-  const idParam = req.params.id;
-  const [rawType, id] = idParam.split('-');
-  const type = rawType === 'series' ? 'tv' : rawType;
-  
-  if (!type || !id) {
-    return res.status(400).json({ error: 'Invalid ID format' });
-  }
-
+app.get("/api/shows/:id/related", async (req, res) => {
   try {
-    const endpoint = type === 'movie' ? `/movie/${id}/recommendations` : `/tv/${id}/recommendations`;
-    const data = await fetchTmdb(endpoint, { language: 'en-US', page: 1 });
-    let results = data.results || [];
-    if (results.length === 0) {
-      // Fallback to similar if recommendations are empty
-      const similarEndpoint = type === 'movie' ? `/movie/${id}/similar` : `/tv/${id}/similar`;
-      const similarData = await fetchTmdb(similarEndpoint, { language: 'en-US', page: 1 });
-      results = similarData.results || [];
-    }
-    return res.json(results.map((item: any) => normalizeTmdbShow(item, type as 'movie' | 'tv')));
-  } catch {
-    return res.json([]);
+    const { id } = req.params;
+    const [type, ...rest] = id.split('-');
+    const realId = rest.join('-');
+    const data = await fetchTmdb(`/${type === 'series' || type === 'tv' ? 'tv' : 'movie'}/${realId}/similar`, req.query as any);
+    res.json((data.results || []).map((s: any) => normalizeTmdbShow(s, type === 'series' || type === 'tv' ? 'tv' : 'movie')));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.get("/api/tv/:id/season/:seasonNumber", async (req, res) => {
-  const { id, seasonNumber } = req.params;
-  const sNum = parseInt(seasonNumber, 10) || 1;
-  const cleanId = id.replace(/^(tv|series)-/, '');
-
   try {
-    const data = await fetchTmdb(`/tv/${cleanId}/season/${sNum}`, { language: "en-US" });
-    const episodes = (data.episodes || []).map((ep: any) => ({
-      id: ep.id || `${cleanId}-s${sNum}e${ep.episode_number}`,
-      episodeNumber: ep.episode_number,
-      seasonNumber: ep.season_number || sNum,
-      name: ep.name || `Episode ${ep.episode_number}`,
-      overview: ep.overview || `Season ${sNum}, Episode ${ep.episode_number}`,
-      stillPath: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : undefined,
-      airDate: ep.air_date,
-      runtime: ep.runtime,
-      voteAverage: ep.vote_average ? Math.round(ep.vote_average * 10) / 10 : undefined
-    }));
-
-    return res.json({
-      id: data.id || `season-${sNum}`,
-      seasonNumber: sNum,
-      name: data.name || `Season ${sNum}`,
-      overview: data.overview || '',
-      posterPath: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : undefined,
-      episodes
-    });
-  } catch (err) {
-    // Generate fallback episodes if season fetch fails
-    const fallbackEpisodes = Array.from({ length: 10 }, (_, i) => ({
-      id: `${cleanId}-s${sNum}e${i + 1}`,
-      episodeNumber: i + 1,
-      seasonNumber: sNum,
-      name: `Episode ${i + 1}`,
-      overview: `Season ${sNum}, Episode ${i + 1}`,
-      stillPath: undefined,
-      runtime: 45
-    }));
-
-    return res.json({
-      id: `season-${sNum}`,
-      seasonNumber: sNum,
-      name: `Season ${sNum}`,
-      overview: '',
-      episodes: fallbackEpisodes
-    });
+    const { id, seasonNumber } = req.params;
+    const data = await fetchTmdb(`/tv/${id}/season/${seasonNumber}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// --- End TMDB API Proxy ---
-
 async function startServer() {
-  fetchAndParseEPG();
-
-  if (process.env.VERCEL) {
-    // Vercel handles static assets and Vite natively.
-    // We only export the Express app for Serverless Functions.
-    return;
-  }
-
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  
   if (process.env.NODE_ENV !== "production") {
-    const viteStr = "vite";
-    const { createServer: createViteServer } = await import(/* @vite-ignore */ viteStr);
-    const vite = await createViteServer({
+    const vite = await import("vite");
+    const viteServer = await vite.createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares);
+    app.use(viteServer.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
@@ -943,6 +703,7 @@ async function startServer() {
   });
 }
 
+fetchGenreImagesInternal().catch(console.error);
 startServer();
 
 export default app;
