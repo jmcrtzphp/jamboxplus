@@ -367,10 +367,19 @@ export function WatchModal({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
-                className="bg-black relative z-20"
+                className="bg-black relative z-20 overflow-hidden"
               >
+                {/* Ambient Glow Background */}
+                <div 
+                  className="absolute -inset-10 bg-cover bg-center opacity-30 blur-[60px] md:blur-[100px] animate-pulse pointer-events-none"
+                  style={{ 
+                    backgroundImage: `url(${backdrop || poster})`,
+                    animationDuration: '8s'
+                  }}
+                />
+                
                 {/* Cinema View Player Stage */}
-                <div id="player-stage-container" className="w-full max-w-5xl mx-auto p-2 sm:p-4 md:p-6 bg-black relative flex flex-col justify-center">
+                <div id="player-stage-container" className="w-full max-w-5xl mx-auto p-2 sm:p-4 md:p-6 relative z-10 flex flex-col justify-center">
                   
                   {/* Floating Action Bar / Top Overlay */}
                   <div className="fullscreen-overlay-bar mb-3 flex items-center justify-between gap-2 px-1">
