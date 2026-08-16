@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Movies } from './components/Movies';
 
 const pageTransition = {
@@ -11,13 +12,16 @@ const pageTransition = {
 
 export default function App() {
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key="movies" {...pageTransition} className="w-full min-h-screen">
-        <Movies 
-           onBack={() => {}} 
-           onNavigate={() => {}} 
-         />
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <AnimatePresence mode="wait">
+        <motion.div key="movies" {...pageTransition} className="w-full min-h-screen">
+          <Movies 
+             onBack={() => {}} 
+             onNavigate={() => {}} 
+           />
+        </motion.div>
+      </AnimatePresence>
+      <SpeedInsights />
+    </>
   );
 }
