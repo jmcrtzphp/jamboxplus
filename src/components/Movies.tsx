@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Play, Search, Film, Tv, ChevronRight, ChevronLeft, Loader2, Star, X, Check, ExternalLink, Radio, Bookmark, Flame, Sparkles, Laugh, Skull, Wand2, Heart, Users, Shield, Music, Clapperboard, Plus, Compass, Smile, Fingerprint, Camera, Landmark, Rocket, Zap, Baby, Newspaper, Mic, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Show, fetchFilters, searchTitle, fetchShowDetails, fetchByGenre } from '../lib/tmdb';
 import { GENRES, GENRE_LIST, UnifiedGenre } from '../lib/genres';
 
@@ -403,7 +403,24 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
       setActiveIndex((current) => (current + 1) % heroMovies.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [heroMovies]);
+  }, [heroMovies, activeIndex]);
+
+  const dragX = useMotionValue(0);
+  const scale = useTransform(dragX, (x) => {
+    if (typeof x !== 'number') return 1;
+    if (activeIndex === 0 && x > 0) return 1 + (x / 2500);
+    if (activeIndex === heroMovies.length - 1 && x < 0) return 1 - (x / 2500);
+    return 1;
+  });
+
+  const handleDragEnd = (e: any, { offset, velocity }: any) => {
+    const swipePower = Math.abs(offset.x) * velocity.x;
+    if (offset.x > 80 || swipePower > 500) {
+      if (activeIndex > 0) setActiveIndex(i => i - 1);
+    } else if (offset.x < -80 || swipePower < -500) {
+      if (activeIndex < heroMovies.length - 1) setActiveIndex(i => i + 1);
+    }
+  };
 
   if (loading) {
     return <div className="h-[70vh] md:h-[80vh] w-full bg-[#14161B] animate-pulse" />;
@@ -418,7 +435,15 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
   const isFav = isFavorite(currentMovie.id);
 
   return (
-    <div className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group">
+    <div className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black">
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
+        style={{ x: dragX, scale }}
+        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+      >
       {/* Background Posters with cross-fade */}
       {heroMovies.map((movie: any, idx: number) => {
         const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
@@ -484,6 +509,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
           </GlassButton>
         </div>
       </div>
+      </motion.div>
 
       {/* Carousel Indicators */}
       <div className="absolute bottom-6 md:bottom-12 left-0 right-0 sm:right-auto flex justify-center sm:justify-start sm:left-6 md:left-8 lg:left-12 xl:left-16 items-center gap-2 z-20">
