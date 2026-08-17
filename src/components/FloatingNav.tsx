@@ -462,9 +462,9 @@ export function FloatingNav({
                       <span>Instant Matches</span>
                       <span className="text-[10px] text-white/30 lowercase">Press Enter for all</span>
                     </div>
-                    {suggestions.map((item) => (
+                    {suggestions.map((item, index) => (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${index}`}
                         onClick={() => {
                           saveRecentSearch(item.title);
                           setShowSuggestionsDropdown(false);
@@ -520,9 +520,9 @@ export function FloatingNav({
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                          {recentSearches.map((term) => (
+                          {recentSearches.map((term, index) => (
                             <button
-                              key={term}
+                              key={`${term}-${index}`}
                               onClick={() => {
                                 setSearchQuery(term);
                                 saveRecentSearch(term);
@@ -542,9 +542,9 @@ export function FloatingNav({
                         🔥 Trending Now
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {['Dune: Part Two', 'Arcane', 'Avengers', 'Spider-Man', 'Deadpool', 'Fallout'].map((t) => (
+                        {['Dune: Part Two', 'Arcane', 'Avengers', 'Spider-Man', 'Deadpool', 'Fallout'].map((t, index) => (
                           <button
-                            key={t}
+                            key={`${t}-${index}`}
                             onClick={() => {
                               setSearchQuery(t);
                               saveRecentSearch(t);

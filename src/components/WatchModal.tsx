@@ -491,7 +491,12 @@ export function WatchModal({
               </motion.div>
             ) : (
               /* Backdrop Hero Banner with Pull-Down Zoom & Stretch */
-              <div 
+              <motion.div 
+                key="hero"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 ref={modalHeroRef}
                 style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
                 className="relative h-[55vh] sm:h-[65vh] md:h-[70vh] w-full overflow-hidden bg-black select-none"
@@ -508,7 +513,9 @@ export function WatchModal({
                   <img
                     src={backdrop}
                     alt={show.title}
-                    decoding="async"
+                    decoding="sync"
+                    loading="eager"
+                    fetchPriority="high"
                     className="w-full h-full object-cover object-center filter brightness-100 will-change-transform"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent" />
@@ -571,7 +578,7 @@ export function WatchModal({
                     </GlassButton>
                   </div>
                 </motion.div>
-              </div>
+              </motion.div>
             )}
             </AnimatePresence>
 
@@ -634,12 +641,12 @@ export function WatchModal({
                         transition={{ duration: 0.25 }}
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2"
                       >
-                      {seasonData.episodes.map((ep) => {
+                      {seasonData.episodes.map((ep, index) => {
                         const isActive = selectedEpisode === ep.episodeNumber;
                         const epThumb = ep.stillPath || backdrop || poster;
                         return (
                           <div
-                            key={ep.id}
+                            key={`${ep.id}-${index}`}
                             onClick={() => handleSelectEpisode(ep.episodeNumber)}
                             className={`relative rounded-2xl overflow-hidden p-3 transition-all duration-200 cursor-pointer flex flex-col group border ${
                               isActive
@@ -774,9 +781,9 @@ export function WatchModal({
                       transition={{ duration: 0.5 }}
                       className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide snap-x py-2 pl-1 pr-8"
                     >
-                      {relatedShows.map((relatedShow) => (
+                      {relatedShows.map((relatedShow, index) => (
                         <div 
-                          key={relatedShow.id} 
+                          key={`${relatedShow.id}-${index}`} 
                           className="w-[140px] sm:w-[160px] md:w-[180px] flex-shrink-0 snap-start cursor-pointer group relative overflow-hidden rounded-xl border border-white/10 bg-[#1A1D24] aspect-[2/3] transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl will-change-transform"
                           onClick={() => {
                             if (onSelectRelated) onSelectRelated(relatedShow.id);

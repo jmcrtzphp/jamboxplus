@@ -84,14 +84,14 @@ export function ContinueWatchingRow({ onSelect, filterType = 'all' }: ContinueWa
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
       >
-        {items.map((item) => {
+        {items.map((item, index) => {
           const bgImg = item.backdrop || item.poster;
           const isMovie = item.mediaType === 'movie';
           const progressPercent = Math.min(100, Math.max(5, Math.round(item.percentage || 0)));
 
           return (
             <div
-              key={item.id}
+              key={`${item.id}-${index}`}
               onClick={() => onSelect(item.id)}
               className="relative flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] lg:w-[360px] aspect-video rounded-2xl overflow-hidden glass-subtle hover:glass-medium border border-white/15 hover:border-amber-500/50 transition-all duration-300 cursor-pointer group/card shadow-lg flex flex-col justify-end p-3.5"
             >

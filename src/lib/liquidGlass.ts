@@ -41,11 +41,11 @@ export const isLiquidGlassSupported = (() => {
     }
 
     const ua = navigator.userAgent || '';
-    const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
+    const isWebKit = /AppleWebKit/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
     const isFirefox = /Firefox/.test(ua);
     
     // Firefox & pure Safari do not support SVG filter references in backdrop-filter
-    if (isSafari || isFirefox) return false;
+    if (isWebKit || isFirefox) return false;
     
     if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') return false;
     
@@ -288,7 +288,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
     try {
       const frosted = `blur(${o.fallbackBlur || 12}px) saturate(${o.saturate}) brightness(${o.brightness})`;
       el.style.backdropFilter = frosted;
-      (el.style as any).webkitBackdropFilter = frosted;
+      (el.style as any).WebkitBackdropFilter = frosted;
       el.classList.add("GlassFallback", "glass-fallback", "lg-glass-fallback");
     } catch (_) {}
 
@@ -298,7 +298,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
       destroy: () => {
         try {
           el.style.backdropFilter = "";
-          (el.style as any).webkitBackdropFilter = "";
+          (el.style as any).WebkitBackdropFilter = "";
           el.classList.remove("GlassFallback", "glass-fallback", "lg-glass-fallback");
         } catch (_) {}
       },
@@ -349,7 +349,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
     try {
       const filterVal = `url(#${id}) blur(${o.blur}px) saturate(${o.saturate}) brightness(${o.brightness})`;
       el.style.backdropFilter = filterVal;
-      (el.style as any).webkitBackdropFilter = filterVal;
+      (el.style as any).WebkitBackdropFilter = filterVal;
     } catch (_) {
       return applyFallback();
     }
@@ -374,7 +374,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
           if (ro) ro.disconnect();
           parts.filter.remove();
           el.style.backdropFilter = "";
-          (el.style as any).webkitBackdropFilter = "";
+          (el.style as any).WebkitBackdropFilter = "";
         } catch (_) {}
       },
     };

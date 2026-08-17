@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { JamBoxText } from './Logo';
 import { Eye } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+export const Footer: React.FC<{ onOpenCookies?: () => void, onOpenPrivacy?: () => void, onOpenTerms?: () => void }> = ({ onOpenCookies, onOpenPrivacy, onOpenTerms }) => {
   const [visits, setVisits] = useState<number | null>(null);
 
   useEffect(() => {
@@ -94,9 +94,9 @@ export const Footer: React.FC = () => {
             )}
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-white/40 hover:text-amber-500 text-xs transition-colors">Privacy</a>
-            <a href="#" className="text-white/40 hover:text-amber-500 text-xs transition-colors">Terms</a>
-            <a href="#" className="text-white/40 hover:text-amber-500 text-xs transition-colors">Cookie Preferences</a>
+            <button onClick={onOpenPrivacy} className="text-white/40 hover:text-amber-500 text-xs transition-colors cursor-pointer bg-transparent border-none p-0 text-left">Privacy</button>
+            <button onClick={onOpenTerms} className="text-white/40 hover:text-amber-500 text-xs transition-colors cursor-pointer bg-transparent border-none p-0 text-left">Terms</button>
+            <button onClick={onOpenCookies} className="text-white/40 hover:text-amber-500 text-xs transition-colors cursor-pointer bg-transparent border-none p-0 text-left">Cookie Preferences</button>
           </div>
         </div>
       </div>

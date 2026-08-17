@@ -17,9 +17,12 @@ import { FloatingNav } from './FloatingNav';
 interface MoviesProps {
   onBack: () => void;
   onNavigate?: (view: string) => void;
+  onOpenCookies?: () => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
-export function Movies({ onBack, onNavigate }: MoviesProps) {
+export function Movies({ onBack, onNavigate, onOpenCookies, onOpenPrivacy, onOpenTerms }: MoviesProps) {
   const [activeTab, setActiveTab] = useState<'movies' | 'tv' | 'favorites' | 'search'>('movies');
   const [activePlatform, setActivePlatform] = useState<{ id: string, type: 'movie' | 'series' } | null>(null);
   
@@ -184,9 +187,9 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
               <h2 className="text-2xl sm:text-3xl font-extrabold mb-6 text-white drop-shadow">Your Favorites</h2>
           {favorites.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 content-auto">
-              {favorites.map(id => (
+              {favorites.map((id, index) => (
                 <FavoriteItem 
-                  key={id} 
+                  key={`${id}-${index}`} 
                   id={id} 
                   country={country} 
                   onClick={() => handleSelectMovie(id)} 
@@ -207,12 +210,12 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
         ) : null}
       </AnimatePresence>
 
-      <Footer />
+      <Footer onOpenCookies={onOpenCookies} onOpenPrivacy={onOpenPrivacy} onOpenTerms={onOpenTerms} />
 
       {/* Watch & Playback Modal - Liquid Glass with CineSrc Player */}
       <AnimatePresence>
         {selectedMovieId && (
-          <WatchModal onSelectRelated={handleSelectMovie} 
+          <WatchModal key={selectedMovieId} onSelectRelated={handleSelectMovie} 
              showId={selectedMovieId} 
              country={country} 
              onClose={handleCloseModal} 
@@ -425,10 +428,12 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
             const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
             return (
               <img 
-                key={movie.id}
+                key={`${movie.id}-${idx}`}
                 src={bg} 
                 alt={movie.title} 
-                decoding="async"
+                decoding={idx === activeIndex ? "sync" : "async"}
+                loading={idx === activeIndex ? "eager" : "lazy"}
+                fetchPriority={idx === activeIndex ? "high" : "auto"}
                 className={`absolute inset-0 w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform transition-opacity duration-1000 ease-in-out ${idx === activeIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
               />
             );
@@ -587,8 +592,8 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
         </button>
         
         <div ref={scrollRef} className="flex gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide snap-x py-4 -my-4 pl-1 pr-12">
-          {shows.map(show => (
-            <div key={show.id} className="w-[140px] sm:w-[160px] md:w-[190px] lg:w-[220px] xl:w-[240px] flex-shrink-0 snap-start">
+          {shows.map((show, index) => (
+            <div key={`${show.id}-${index}`} className="w-[140px] sm:w-[160px] md:w-[190px] lg:w-[220px] xl:w-[240px] flex-shrink-0 snap-start">
               <MovieCard 
                 show={show} 
                 country={country}
@@ -714,8 +719,8 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
         </button>
         
         <div ref={scrollRef} className="flex gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide snap-x py-4 -my-4 pl-1 pr-12">
-          {shows.slice(0, 12).map(show => (
-            <div key={show.id} className="w-[140px] sm:w-[160px] md:w-[190px] lg:w-[220px] xl:w-[240px] flex-shrink-0 snap-start">
+          {shows.slice(0, 12).map((show, index) => (
+            <div key={`${show.id}-${index}`} className="w-[140px] sm:w-[160px] md:w-[190px] lg:w-[220px] xl:w-[240px] flex-shrink-0 snap-start">
               <MovieCard 
                 show={show} 
                 country={country}
@@ -814,7 +819,9 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
             <img 
               src={topPoster} 
               alt={topShow.title} 
-              decoding="async"
+              decoding="sync"
+              loading="eager"
+              fetchPriority="high"
               className="w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform"
             />
             {/* Atmospheric Depth Gradients */}
@@ -925,7 +932,7 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
             {shows.map((show, index) => {
               const isLast = index === shows.length - 1;
               return (
-                <div key={show.id} ref={isLast ? lastElementRef : null}>
+                <div key={`${show.id}-${index}`} ref={isLast ? lastElementRef : null}>
                   <MovieCard 
                     show={show} 
                     country={country}
@@ -1111,12 +1118,12 @@ function GenreCatalogueView({
 
             {/* Content Type Filter Tabs */}
             <div className="flex items-center bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 self-start md:self-auto shadow-md">
-              {(['all', 'movie', 'series'] as const).map((t) => {
+              {(['all', 'movie', 'series'] as const).map((t, index) => {
                 const label = t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV Series';
                 const active = genreTypeFilter === t;
                 return (
                   <button
-                    key={t}
+                    key={`${t}-${index}`}
                     onClick={() => handleSetGenreType(t)}
                     className={`px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer ${
                       active
@@ -1147,7 +1154,7 @@ function GenreCatalogueView({
             {shows.map((show: Show, index: number) => {
               const isLast = index === shows.length - 1;
               return (
-                <div key={show.id} ref={isLast ? lastElementRef : null}>
+                <div key={`${show.id}-${index}`} ref={isLast ? lastElementRef : null}>
                   <MovieCard 
                     show={show} 
                     country={country}
@@ -1396,9 +1403,9 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
             <div className="flex flex-wrap items-center gap-2">
               {/* Type Selector (All / Movies / Shows) */}
               <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-0.5 text-xs">
-                {(['all', 'movie', 'series'] as const).map((t) => (
+                {(['all', 'movie', 'series'] as const).map((t, index) => (
                   <button
-                    key={t}
+                    key={`${t}-${index}`}
                     onClick={() => setSearchTypeFilter(t)}
                     className={`px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
                       searchTypeFilter === t ? 'bg-amber-500 text-black font-semibold' : 'text-white/60 hover:text-white'
@@ -1483,9 +1490,9 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
                   Popular searches you might like
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {['Dune', 'Arcane', 'Avengers', 'Stranger Things', 'Spider-Man', 'Deadpool', 'Fallout', 'Oppenheimer'].map(t => (
+                  {['Dune', 'Arcane', 'Avengers', 'Stranger Things', 'Spider-Man', 'Deadpool', 'Fallout', 'Oppenheimer'].map((t, index) => (
                     <button
-                      key={t}
+                      key={`${t}-${index}`}
                       onClick={() => setSearchQuery?.(t)}
                       className="px-3 py-1 text-xs bg-white/5 hover:bg-white/15 text-white/80 rounded-full border border-white/10 transition-colors cursor-pointer"
                     >

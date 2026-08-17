@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Movies } from './components/Movies';
+import { CookieBanner, CookiePreferences, PrivacyPolicy, TermsOfService } from './components/Legal';
 
 const pageTransition = {
   initial: { opacity: 0, x: 40 },
@@ -10,6 +11,10 @@ const pageTransition = {
 };
 
 export default function App() {
+  const [showCookies, setShowCookies] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
   useEffect(() => {
     const trackPageView = async () => {
       try {
@@ -26,13 +31,26 @@ export default function App() {
   }, []);
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key="movies" {...pageTransition} className="w-full min-h-screen">
-        <Movies 
-           onBack={() => {}} 
-           onNavigate={() => {}} 
-         />
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <AnimatePresence mode="wait">
+        <motion.div key="movies" {...pageTransition} className="w-full min-h-screen">
+          <Movies
+              onBack={() => {}}
+              onNavigate={() => {}}
+              onOpenCookies={() => setShowCookies(true)}
+              onOpenPrivacy={() => setShowPrivacy(true)}
+              onOpenTerms={() => setShowTerms(true)}
+            />
+        </motion.div>
+      </AnimatePresence>
+      
+      <CookieBanner onOpenPreferences={() => setShowCookies(true)} />
+      
+      <AnimatePresence>
+        {showCookies && <CookiePreferences key="cookies" onClose={() => setShowCookies(false)} onOpenPrivacy={() => { setShowCookies(false); setShowPrivacy(true); }} />}
+        {showPrivacy && <PrivacyPolicy key="privacy" onClose={() => setShowPrivacy(false)} />}
+        {showTerms && <TermsOfService key="terms" onClose={() => setShowTerms(false)} />}
+      </AnimatePresence>
+    </>
   );
 }
