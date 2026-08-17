@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Play, Search, Film, Tv, ChevronRight, ChevronLeft, Loader2, Star, X, Check, ExternalLink, Radio, Bookmark, Flame, Sparkles, Laugh, Skull, Wand2, Heart, Users, Shield, Music, Clapperboard, Plus, Compass, Smile, Fingerprint, Camera, Landmark, Rocket, Zap, Baby, Newspaper, Mic, Info } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Show, fetchFilters, searchTitle, fetchShowDetails, fetchByGenre } from '../lib/tmdb';
-import { GENRES, GENRE_LIST, UnifiedGenre } from '../lib/genres';
+import { GENRES, GENRE_LIST, DEFAULT_GENRE_IMAGES, UnifiedGenre } from '../lib/genres';
 
 import { PLATFORMS, StreamingPlatformIcon, resolvePlatform, PlatformBadge } from '../lib/platforms';
 import { GlassButton, GlassPill, GlassContainer } from './liquid-glass';
@@ -25,6 +25,7 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
   
   const country = 'us';
   const [heroMovies, setHeroMovies] = useState<Show[]>([]);
+  const [heroTVs, setHeroTVs] = useState<Show[]>([]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -162,6 +163,8 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
           >
             <TVShowsView 
               country={country} 
+              heroTVs={heroTVs}
+              setHeroTVs={setHeroTVs}
               onSelectMovie={handleSelectMovie}
               isFavorite={isFavorite}
               toggleFavorite={toggleFavorite}
@@ -178,41 +181,7 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
             className="w-full"
           >
             <div className="pt-20 md:pt-32 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto min-h-screen pb-28 md:pb-20">
-
-      <div className="sm:hidden mb-6 relative">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
-        <input 
-          autoFocus
-          type="text" 
-          placeholder="Search titles, actors, genres..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#1A1D24] border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white placeholder-white/40 outline-none focus:border-amber-500/50 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
-            <X size={16} />
-          </button>
-        )}
-      </div>
-
-                <div className="sm:hidden mb-6 relative">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
-        <input 
-          autoFocus
-          type="text" 
-          placeholder="Search titles, actors, genres..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#1A1D24] border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white placeholder-white/40 outline-none focus:border-amber-500/50 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
-            <X size={16} />
-          </button>
-        )}
-      </div>
-      <h2 className="text-2xl sm:text-3xl font-extrabold mb-6 text-white drop-shadow">Your Favorites</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-6 text-white drop-shadow">Your Favorites</h2>
           {favorites.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 content-auto">
               {favorites.map(id => (
@@ -334,8 +303,7 @@ function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavor
   );
 }
 
-function TVShowsView({ country, onSelectMovie, isFavorite, toggleFavorite, onSeeAll }: any) {
-  const [heroTVs, setHeroTVs] = useState<Show[]>([]);
+function TVShowsView({ country, heroTVs, setHeroTVs, onSelectMovie, isFavorite, toggleFavorite, onSeeAll }: any) {
   const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'series', order_by: 'popularity_1week' }), [country]);
 
   return (
@@ -415,7 +383,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const pullDownScale = usePullDownZoom(containerRef);
+  const { imageScale, contentY } = usePullDownZoom(containerRef);
 
   if (loading) {
     return <div className="h-[70vh] md:h-[80vh] w-full bg-[#14161B] animate-pulse" />;
@@ -430,41 +398,55 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
   const isFav = isFavorite(currentMovie.id);
 
   return (
-    <motion.div 
+    <div 
       ref={containerRef}
-      style={{ scale: pullDownScale, transformOrigin: 'top center' }}
-      className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black"
+      style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
+      className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black select-none"
     >
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
-        style={{ x: dragX, scale: swipeScale }}
-        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+      {/* 1. Sticky Hero Image Layer (Firmly anchored at top 0, expands proportionally downward without distortion) */}
+      <motion.div 
+        className="sticky top-0 inset-x-0 w-full h-full pointer-events-none will-change-transform"
+        style={{ 
+          scale: imageScale,
+          transformOrigin: '50% 0%',
+          WebkitTransformOrigin: '50% 0%',
+        }}
       >
-      {/* Background Posters with cross-fade */}
-      {heroMovies.map((movie: any, idx: number) => {
-        const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
-        return (
-          <img 
-            key={movie.id}
-            src={bg} 
-            alt={movie.title} 
-            decoding="async"
-            className={`absolute inset-0 w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform transition-opacity duration-1000 ease-in-out ${idx === activeIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
-          />
-        );
-      })}
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={handleDragEnd}
+          style={{ x: dragX, scale: swipeScale, touchAction: 'pan-x pan-y' }}
+          className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto"
+        >
+          {/* Background Posters with cross-fade */}
+          {heroMovies.map((movie: any, idx: number) => {
+            const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
+            return (
+              <img 
+                key={movie.id}
+                src={bg} 
+                alt={movie.title} 
+                decoding="async"
+                className={`absolute inset-0 w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform transition-opacity duration-1000 ease-in-out ${idx === activeIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
+              />
+            );
+          })}
 
-      {/* Atmospheric Liquid Glass Depth Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent z-0 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0 pointer-events-none" />
+          {/* Atmospheric Liquid Glass Depth Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent z-0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0" />
+        </motion.div>
+      </motion.div>
 
-      {/* Hero Content Panel */}
-      <div className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-0 right-0 px-6 sm:px-0 sm:left-6 md:left-8 lg:left-12 xl:left-16 sm:right-auto flex flex-col items-center text-center sm:items-start sm:text-left max-w-2xl z-10 pb-2 sm:pb-0">
+      {/* 2. Parallax Content Overlay Layer (Separate layer with negative translation offset of 0.35x pull distance) */}
+      <motion.div 
+        style={{ y: contentY }}
+        className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-0 right-0 px-6 sm:px-0 sm:left-6 md:left-8 lg:left-12 xl:left-16 sm:right-auto flex flex-col items-center text-center sm:items-start sm:text-left max-w-2xl z-10 pb-2 sm:pb-0 pointer-events-none will-change-transform"
+      >
         {rating && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-subtle text-yellow-300 text-xs font-bold mb-3.5 shadow-md">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-subtle text-yellow-300 text-xs font-bold mb-3.5 shadow-md pointer-events-auto">
             <Star size={13} className="fill-yellow-400 text-yellow-400" />
             <span>{rating} Rating</span>
           </div>
@@ -472,12 +454,12 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg leading-tight transition-all duration-500">
           {currentMovie.title}
         </h1>
-        <p className="text-white/80 text-sm md:text-base line-clamp-3 mb-6 font-normal drop-shadow leading-relaxed max-w-xl transition-all duration-500">
+        <p className="text-white/80 text-sm md:text-base line-clamp-3 mb-6 font-normal drop-shadow leading-relaxed max-w-xl transition-all duration-500 pointer-events-auto">
           {currentMovie.overview}
         </p>
 
         {/* Hero Interactive Physical Buttons */}
-        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3">
+        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 pointer-events-auto">
           <GlassButton 
             variant="primary" 
             size="md"
@@ -507,21 +489,20 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
             <Info size={18} className="text-white/80" />
           </GlassButton>
         </div>
-      </div>
       </motion.div>
 
-      {/* Carousel Indicators */}
-      <div className="absolute bottom-6 md:bottom-12 left-0 right-0 sm:right-auto flex justify-center sm:justify-start sm:left-6 md:left-8 lg:left-12 xl:left-16 items-center gap-2 z-20">
+      {/* 3. Carousel Indicators (Synchronized parallax with content overlay) */}
+      <motion.div style={{ y: contentY }} className="absolute bottom-6 md:bottom-12 left-0 right-0 sm:right-auto flex justify-center sm:justify-start sm:left-6 md:left-8 lg:left-12 xl:left-16 items-center gap-2 z-20 pointer-events-none will-change-transform">
         {heroMovies.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setActiveIndex(idx)}
-            className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${idx === activeIndex ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`}
+            className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer pointer-events-auto ${idx === activeIndex ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`}
             aria-label={`Go to slide ${idx + 1}`}
           />
         ))}
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 });
 
@@ -533,17 +514,24 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setIsInView(true);
-        observer.disconnect();
-      }
-    }, { rootMargin: '300px' });
-    
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    if (!containerRef.current || typeof IntersectionObserver === 'undefined') {
+      setIsInView(true);
+      return;
     }
-    return () => observer.disconnect();
+
+    try {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      }, { rootMargin: '300px 300px 300px 300px' });
+      
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    } catch (_) {
+      setIsInView(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -551,9 +539,9 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
     let isMounted = true;
     setLoading(true);
     fetcher().then((res: any) => {
-      if (isMounted) setShows(res.shows);
+      if (isMounted) setShows(res?.shows || []);
     }).catch((err: any) => {
-      console.error("CategoryRow fetch error:", err);
+      console.error("CategoryRow fetch error:", err?.message || err);
     }).finally(() => {
       if (isMounted) setLoading(false);
     });
@@ -634,17 +622,24 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
 
   // Lazy loading observer
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setIsInView(true);
-        observer.disconnect();
-      }
-    }, { rootMargin: '300px' });
-    
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    if (!containerRef.current || typeof IntersectionObserver === 'undefined') {
+      setIsInView(true);
+      return;
     }
-    return () => observer.disconnect();
+
+    try {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      }, { rootMargin: '300px 300px 300px 300px' });
+      
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    } catch (_) {
+      setIsInView(true);
+    }
   }, []);
 
   const loadData = useCallback(() => {
@@ -752,6 +747,9 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const p = PLATFORMS[platformId];
 
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { imageScale, contentY } = usePullDownZoom(heroRef);
+
   const loadData = useCallback((reset = false) => {
     if (reset) setLoading(true);
     else setIsFetchingMore(true);
@@ -788,52 +786,165 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
     if (node) observer.current.observe(node);
   }, [loading, isFetchingMore, hasMore, loadData]);
 
+  const topShow = shows[0];
+  const topPoster = topShow?.imageSet?.horizontalPoster?.w1080 || topShow?.imageSet?.poster;
+  const topRating = topShow?.rating ? (topShow.rating > 10 ? topShow.rating / 10 : topShow.rating).toFixed(1) : null;
+  const isTopFav = topShow ? isFavorite(topShow.id) : false;
+
   return (
-    <div className="pt-20 md:pt-32 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto min-h-screen pb-28 md:pb-20">
-      <GlassButton variant="secondary" size="sm" onClick={onBack} className="mb-6 md:mb-8">
-        <ChevronLeft size={16} /> Back to Catalog
-      </GlassButton>
-
-      <div className="flex items-center gap-4 mb-8 md:mb-10">
-        <StreamingPlatformIcon platformId={platformId} className="w-14 h-14 sm:w-16 sm:h-16 text-xl rounded-2xl shadow-2xl" />
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{p.displayName}</h1>
-          <p className="text-white/60 text-sm sm:text-base">Top {type === 'movie' ? 'Movies' : 'TV Shows'}</p>
-        </div>
-      </div>
-
+    <div className="min-h-screen pb-28 md:pb-20">
+      {/* 1. Platform Hero Banner with Pull-Down Zoom & Stretch */}
       {loading && shows.length === 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="aspect-[2/3] bg-white/5 animate-pulse rounded-3xl" />
-          ))}
-        </div>
-      ) : shows.length === 0 ? (
-        <div className="text-center text-white/50 py-20">No content available for {p.displayName} in this region.</div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 pb-20 content-auto">
-          {shows.map((show, index) => {
-            const isLast = index === shows.length - 1;
-            return (
-              <div key={show.id} ref={isLast ? lastElementRef : null}>
-                <MovieCard 
-                  show={show} 
-                  country={country}
-                  platformId={platformId} 
-                  onClick={() => onSelectMovie(show.id)} 
-                  isFavorite={isFavorite(show.id)} 
-                  onToggleFavorite={toggleFavorite} 
-                />
+        <div className="h-[55vh] md:h-[65vh] w-full bg-[#14161B] animate-pulse" />
+      ) : topShow && topPoster ? (
+        <div 
+          ref={heroRef}
+          style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
+          className="relative h-[60vh] sm:h-[68vh] md:h-[75vh] w-full overflow-hidden gpu-layer group bg-black select-none"
+        >
+          {/* Sticky Scalable Backdrop Layer */}
+          <motion.div 
+            className="sticky top-0 inset-x-0 w-full h-full pointer-events-none will-change-transform"
+            style={{ 
+              scale: imageScale,
+              transformOrigin: '50% 0%',
+              WebkitTransformOrigin: '50% 0%',
+            }}
+          >
+            <img 
+              src={topPoster} 
+              alt={topShow.title} 
+              decoding="async"
+              className="w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform"
+            />
+            {/* Atmospheric Depth Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-35% to-transparent z-0" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent h-32 z-0" />
+          </motion.div>
+
+          {/* Floating Back Navigation Pill */}
+          <div className="absolute top-20 sm:top-24 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-16 z-30 pointer-events-auto">
+            <GlassButton variant="secondary" size="sm" onClick={onBack} className="shadow-2xl">
+              <ChevronLeft size={16} /> Back to Catalog
+            </GlassButton>
+          </div>
+
+          {/* Parallax Hero Info Overlay Layer */}
+          <motion.div 
+            style={{ y: contentY }}
+            className="absolute bottom-8 sm:bottom-12 md:bottom-16 left-0 right-0 px-6 sm:px-0 sm:left-6 md:left-8 lg:left-12 xl:left-16 sm:right-auto flex flex-col items-center text-center sm:items-start sm:text-left max-w-2xl z-20 pb-2 sm:pb-0 pointer-events-none will-change-transform"
+          >
+            <div className="flex flex-wrap items-center gap-2.5 mb-3 pointer-events-auto">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full shadow-lg">
+                <StreamingPlatformIcon platformId={platformId} className="w-5 h-5 rounded-md" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">{p.displayName} Spotlight</span>
               </div>
-            );
-          })}
-          {isFetchingMore && (
-             <div className="col-span-full flex justify-center py-8">
-               <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-             </div>
-          )}
+
+              {topRating && (
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full glass-subtle text-yellow-300 text-xs font-bold shadow-md">
+                  <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                  <span>{topRating}</span>
+                </div>
+              )}
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-3 drop-shadow-lg leading-tight">
+              {topShow.title}
+            </h1>
+
+            {topShow.overview && (
+              <p className="text-white/80 text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-5 font-normal drop-shadow leading-relaxed max-w-xl pointer-events-auto">
+                {topShow.overview}
+              </p>
+            )}
+
+            <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 pointer-events-auto">
+              <GlassButton 
+                variant="primary" 
+                size="md"
+                onClick={() => onSelectMovie(topShow.id)}
+                className="cursor-pointer shadow-xl"
+              >
+                <Play size={17} className="fill-white" /> Watch Now
+              </GlassButton>
+
+              <GlassButton 
+                variant="secondary" 
+                size="md"
+                onClick={(e) => toggleFavorite(e, topShow.id)}
+                className="cursor-pointer"
+              >
+                {isTopFav ? <Check size={17} className="text-green-400" /> : <Plus size={17} />}
+                {isTopFav ? 'Saved' : 'Add to Favorites'}
+              </GlassButton>
+            </div>
+          </motion.div>
+        </div>
+      ) : (
+        <div className="pt-20 md:pt-32 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto">
+          <GlassButton variant="secondary" size="sm" onClick={onBack} className="mb-6 md:mb-8">
+            <ChevronLeft size={16} /> Back to Catalog
+          </GlassButton>
+          <div className="flex items-center gap-4 mb-8">
+            <StreamingPlatformIcon platformId={platformId} className="w-14 h-14 sm:w-16 sm:h-16 text-xl rounded-2xl shadow-2xl" />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{p.displayName}</h1>
+              <p className="text-white/60 text-sm sm:text-base">Top {type === 'movie' ? 'Movies' : 'TV Shows'}</p>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* 2. Platform Catalogue Content Grid */}
+      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <StreamingPlatformIcon platformId={platformId} className="w-8 h-8 rounded-xl" />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                All {p.displayName} {type === 'movie' ? 'Movies' : 'TV Shows'}
+              </h2>
+              <p className="text-xs sm:text-sm text-white/50">
+                Curated stream catalog for {country.toUpperCase()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {loading && shows.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-white/5 animate-pulse rounded-3xl" />
+            ))}
+          </div>
+        ) : shows.length === 0 ? (
+          <div className="text-center text-white/50 py-20">No content available for {p.displayName} in this region.</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 content-auto">
+            {shows.map((show, index) => {
+              const isLast = index === shows.length - 1;
+              return (
+                <div key={show.id} ref={isLast ? lastElementRef : null}>
+                  <MovieCard 
+                    show={show} 
+                    country={country}
+                    platformId={platformId} 
+                    onClick={() => onSelectMovie(show.id)} 
+                    isFavorite={isFavorite(show.id)} 
+                    onToggleFavorite={toggleFavorite} 
+                  />
+                </div>
+              );
+            })}
+            {isFetchingMore && (
+              <div className="col-span-full flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -933,20 +1044,140 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
   const IconMap: any = { Flame, Compass, Clapperboard, Laugh: Smile, Fingerprint, Camera, Star, Users, Wand2, Landmark, Skull, Music, Search, Heart, Rocket, Zap, Shield, Baby, Newspaper, Tv, Sparkles, Mic };
   const Icon = IconMap[name] || Film;
   return <Icon size={size} className={className} />;
-});function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFavorite, toggleFavorite }: any) {
+});
+
+function GenreCatalogueView({
+  selectedGenre,
+  genreImages,
+  genreTypeFilter,
+  handleSetGenreType,
+  shows,
+  loading,
+  isFetchingMore,
+  country,
+  lastElementRef,
+  onSelectMovie,
+  isFavorite,
+  toggleFavorite,
+  onBack,
+}: any) {
+  const backdropImage = 
+    (selectedGenre.movieId && genreImages[`movie_${selectedGenre.movieId}`]) || 
+    (selectedGenre.tvId && genreImages[`tv_${selectedGenre.tvId}`]) || 
+    selectedGenre.image || 
+    DEFAULT_GENRE_IMAGES[`movie_${selectedGenre.movieId}`] ||
+    DEFAULT_GENRE_IMAGES[`tv_${selectedGenre.tvId}`];
+
+  return (
+    <div className="min-h-screen pb-28 md:pb-20">
+      {/* Refined Liquid Glass Category Header (Fast, Instant, No Pull-Down Zoom) */}
+      <div className="relative overflow-hidden border-b border-white/10 bg-[#0E1015] py-8 sm:py-12">
+        {/* Subtle Ambient Background Artwork */}
+        {backdropImage && (
+          <div className="absolute inset-0 pointer-events-none opacity-20 filter blur-2xl transform scale-110">
+            <img 
+              src={backdropImage} 
+              alt={selectedGenre.name} 
+              decoding="async" 
+              loading="lazy" 
+              className="w-full h-full object-cover" 
+            />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0E1015]/80 via-[#0E1015]/95 to-[#0E1015] pointer-events-none" />
+
+        <div className="relative z-10 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto">
+          {/* Back Action */}
+          <div className="mb-6">
+            <GlassButton variant="secondary" size="sm" onClick={onBack} className="shadow-lg">
+              <ChevronLeft size={16} /> Back to All Genres
+            </GlassButton>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0_8px_24px_rgba(0,0,0,0.5)] shrink-0">
+                <GenreIcon name={selectedGenre.iconName} size={30} className="text-amber-500 drop-shadow-md" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-none drop-shadow-md mb-1.5">
+                  {selectedGenre.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-white/60 font-medium tracking-wide max-w-xl">
+                  {selectedGenre.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Content Type Filter Tabs */}
+            <div className="flex items-center bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 self-start md:self-auto shadow-md">
+              {(['all', 'movie', 'series'] as const).map((t) => {
+                const label = t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV Series';
+                const active = genreTypeFilter === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => handleSetGenreType(t)}
+                    className={`px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer ${
+                      active
+                        ? 'bg-amber-500 text-black shadow-md font-bold'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Genre Catalogue Shows Grid */}
+      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto pt-8">
+        {loading && shows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+            <p className="text-sm text-white/50">Loading {selectedGenre.name} titles...</p>
+          </div>
+        ) : shows.length === 0 ? (
+          <div className="text-center py-20 text-white/50">No titles found in this category.</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 content-auto">
+            {shows.map((show: Show, index: number) => {
+              const isLast = index === shows.length - 1;
+              return (
+                <div key={show.id} ref={isLast ? lastElementRef : null}>
+                  <MovieCard 
+                    show={show} 
+                    country={country}
+                    platformId={undefined} 
+                    onClick={() => onSelectMovie(show.id)} 
+                    isFavorite={isFavorite(show.id)} 
+                    onToggleFavorite={toggleFavorite} 
+                  />
+                </div>
+              );
+            })}
+            {isFetchingMore && (
+              <div className="col-span-full flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFavorite, toggleFavorite }: any) {
   const [selectedGenre, setSelectedGenre] = useState<UnifiedGenre | null>(null);
-  const [genreImages, setGenreImages] = useState<Record<string, string>>({});
+  const [genreImages] = useState<Record<string, string>>(DEFAULT_GENRE_IMAGES);
   const [searchTypeFilter, setSearchTypeFilter] = useState<'all' | 'movie' | 'series'>('all');
   const [searchSort, setSearchSort] = useState<'default' | 'rating' | 'newest'>('default');
   const [searchMinRating, setSearchMinRating] = useState<number>(0);
   const [searchGenreFilter, setSearchGenreFilter] = useState<UnifiedGenre | null>(null);
-
-  useEffect(() => {
-    fetch('/api/genres/images')
-      .then(res => res.json())
-      .then(data => setGenreImages(data))
-      .catch(console.error);
-  }, []);
 
   const syncGenreFromUrl = useCallback(() => {
     const path = window.location.pathname;
@@ -1005,10 +1236,25 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
     }
   }, [searchQuery]);
 
+  const searchMemCache = useRef<Map<string, { shows: Show[]; hasMore: boolean; nextCursor?: string }>>(new Map());
+
   const loadData = useCallback((reset = false) => {
     const isSearch = !!searchQuery?.trim();
     if (!isSearch && !selectedGenre) {
       setShows([]);
+      setLoading(false);
+      return;
+    }
+
+    const cacheKey = isSearch
+      ? `search_${searchQuery.trim().toLowerCase()}_${searchTypeFilter}_${searchGenreFilter?.id || 'all'}_${country}_${reset ? 'init' : nextCursor || ''}`
+      : `genre_${selectedGenre?.id}_${genreTypeFilter}_${country}_${reset ? 'init' : nextCursor || ''}`;
+
+    if (reset && searchMemCache.current.has(cacheKey)) {
+      const cached = searchMemCache.current.get(cacheKey)!;
+      setShows(cached.shows);
+      setHasMore(cached.hasMore);
+      setNextCursor(cached.nextCursor);
       setLoading(false);
       return;
     }
@@ -1036,7 +1282,11 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
         ...(activeGenre ? { movie_genre: activeGenre.movieId, tv_genre: activeGenre.tvId } : {})
       }, currentController?.signal)
         .then(res => {
-          setShows(prev => reset ? res.shows : [...prev, ...res.shows]);
+          setShows(prev => {
+            const updated = reset ? res.shows : [...prev, ...res.shows];
+            searchMemCache.current.set(cacheKey, { shows: updated, hasMore: res.hasMore, nextCursor: res.nextCursor });
+            return updated;
+          });
           setHasMore(res.hasMore);
           setNextCursor(res.nextCursor);
         })
@@ -1052,7 +1302,11 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
     } else if (selectedGenre) {
       fetchByGenre(selectedGenre.movieId, selectedGenre.tvId, genreTypeFilter, country, reset ? undefined : nextCursor)
         .then(res => {
-          setShows(prev => reset ? res.shows : [...prev, ...res.shows]);
+          setShows(prev => {
+            const updated = reset ? res.shows : [...prev, ...res.shows];
+            searchMemCache.current.set(cacheKey, { shows: updated, hasMore: res.hasMore, nextCursor: res.nextCursor });
+            return updated;
+          });
           setHasMore(res.hasMore);
           setNextCursor(res.nextCursor);
         })
@@ -1067,7 +1321,7 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
   useEffect(() => {
     const timer = setTimeout(() => {
       loadData(true);
-    }, searchQuery ? 120 : 0);
+    }, searchQuery ? 150 : 0);
     return () => {
       clearTimeout(timer);
     };
@@ -1108,49 +1362,6 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
 
   return (
     <div className="pt-20 md:pt-32 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto min-h-screen pb-28 md:pb-20">
-      {/* Category Pills Horizontal Scroll */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 mb-6">
-        <button
-          onClick={() => {
-            setSearchQuery?.('');
-            setSearchGenreFilter(null);
-            (() => { setSelectedGenre(null); window.history.pushState({}, '', '/'); })();
-          }}
-          className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
-            !selectedGenre && !isSearchActive
-              ? 'refractive-glass-pill text-white shadow-lg'
-              : 'glass-subtle text-white/70 hover:text-white'
-          }`}
-        >
-          All Genres
-        </button>
-
-        {GENRE_LIST.map((genre) => {
-          const isSelected = selectedGenre?.id === genre.id || (isSearchActive && searchGenreFilter?.id === genre.id);
-          return (
-            <button
-              key={genre.id}
-              onClick={() => {
-                if (isSearchActive) {
-                  setSearchGenreFilter(prev => prev?.id === genre.id ? null : genre);
-                } else {
-                  setSearchQuery?.('');
-                  setSelectedGenre(genre);
-                }
-              }}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 ${
-                isSelected
-                  ? 'refractive-glass-pill text-white shadow-lg'
-                  : 'glass-subtle text-white/70 hover:text-white'
-              }`}
-            >
-              <GenreIcon name={genre.iconName} size={14} className={isSelected ? 'text-white' : 'text-white/60'} />
-              {genre.name}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Case 1: Active Search Query */}
       {isSearchActive ? (
         <div>
@@ -1322,99 +1533,22 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
           )}
         </div>
       ) : selectedGenre ? (
-        /* Case 2: Selected Genre View */
-        <div className="flex flex-col">
-          {/* Back Button */}
-          <button 
-            onClick={() => { setSelectedGenre(null); window.history.pushState({}, '', '/'); }}
-            className="inline-flex items-center self-start gap-2 text-sm font-semibold text-white/80 hover:text-white bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2 rounded-[20px] mb-8 backdrop-blur-3xl cursor-pointer transition-all shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
-          >
-            <ChevronLeft size={16} />
-            Back to All Genres
-          </button>
-
-          {/* Genre Header Box (Liquid Glass) */}
-          <div className="flex items-center gap-6 bg-[rgba(255,255,255,0.03)] backdrop-blur-[30px] border border-[rgba(255,255,255,0.18)] rounded-[36px] p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.5)] mb-8">
-            <div className="w-[88px] h-[88px] rounded-[24px] bg-[rgba(255,255,255,0.06)] border border-white/20 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)]">
-              <GenreIcon name={selectedGenre.iconName} size={40} className="text-white drop-shadow-md" />
-            </div>
-            <div className="flex flex-col justify-center">
-              <h2 className="text-[32px] font-extrabold text-white tracking-tight leading-none drop-shadow-md mb-2">
-                {selectedGenre.name}
-              </h2>
-              <p className="text-[15px] text-white/70 font-medium tracking-wide">
-                {selectedGenre.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Content Type Selector */}
-          <div className="flex items-center bg-[rgba(255,255,255,0.03)] backdrop-blur-[30px] p-2 rounded-[24px] border border-[rgba(255,255,255,0.12)] mb-8 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
-            <button
-              onClick={() => handleSetGenreType('all')}
-              className={`flex-1 py-3 text-sm sm:text-base font-semibold rounded-[16px] transition-all duration-300 cursor-pointer ${
-                genreTypeFilter === 'all' 
-                  ? 'bg-white/15 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]' 
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => handleSetGenreType('movie')}
-              className={`flex-1 py-3 text-sm sm:text-base font-semibold rounded-[16px] transition-all duration-300 cursor-pointer ${
-                genreTypeFilter === 'movie' 
-                  ? 'bg-white/15 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]' 
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Movies
-            </button>
-            <button
-              onClick={() => handleSetGenreType('series')}
-              className={`flex-1 py-3 text-sm sm:text-base font-semibold rounded-[16px] transition-all duration-300 cursor-pointer ${
-                genreTypeFilter === 'series' 
-                  ? 'bg-white/15 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]' 
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              TV Series
-            </button>
-          </div>
-
-          {/* Genre Shows List */}
-          {loading && shows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-              <p className="text-sm text-white/50">Loading {selectedGenre.name} titles...</p>
-            </div>
-          ) : shows.length === 0 ? (
-            <div className="text-center py-20 text-white/50">No titles found in this category.</div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 pb-20 content-auto">
-              {shows.map((show, index) => {
-                const isLast = index === shows.length - 1;
-                return (
-                  <div key={show.id} ref={isLast ? lastElementRef : null}>
-                    <MovieCard 
-                      show={show} 
-                      country={country}
-                      platformId={undefined} 
-                      onClick={() => onSelectMovie(show.id)} 
-                      isFavorite={isFavorite(show.id)} 
-                      onToggleFavorite={toggleFavorite} 
-                    />
-                  </div>
-                );
-              })}
-              {isFetchingMore && (
-                <div className="col-span-full flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        /* Case 2: Selected Genre View with Pull-Down Zoom & Stretch Hero */
+        <GenreCatalogueView 
+          selectedGenre={selectedGenre}
+          genreImages={genreImages}
+          genreTypeFilter={genreTypeFilter}
+          handleSetGenreType={handleSetGenreType}
+          shows={shows}
+          loading={loading}
+          isFetchingMore={isFetchingMore}
+          country={country}
+          lastElementRef={lastElementRef}
+          onSelectMovie={onSelectMovie}
+          isFavorite={isFavorite}
+          toggleFavorite={toggleFavorite}
+          onBack={() => { setSelectedGenre(null); window.history.pushState({}, '', '/'); }}
+        />
       ) : (
         /* Case 3: Initial Search View -> Shows Genres Grid */
         <div>
@@ -1441,9 +1575,12 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
                   className={`group relative h-44 rounded-3xl overflow-hidden cursor-pointer border border-white/15 bg-[#15171C] transition-all duration-250 transform hover:-translate-y-1 hover:shadow-2xl ${'hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.1)]'} gpu-layer will-change-transform`}
                 >
                   {/* Backdrop artwork */}
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-105 opacity-60 group-hover:opacity-80 will-change-transform"
-                    style={{ backgroundImage: `url('${(genre.movieId && genreImages[`movie_${genre.movieId}`]) || (genre.tvId && genreImages[`tv_${genre.tvId}`]) || genre.image || ''}')` }}
+                  <img 
+                    src={(genre.movieId && genreImages[`movie_${genre.movieId}`]) || (genre.tvId && genreImages[`tv_${genre.tvId}`]) || genre.image || DEFAULT_GENRE_IMAGES[`movie_${genre.movieId}`] || DEFAULT_GENRE_IMAGES[`tv_${genre.tvId}`]} 
+                    alt={genre.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 opacity-60 group-hover:opacity-85 will-change-transform"
                   />
                   
                   {/* Atmospheric gradient overlay */}

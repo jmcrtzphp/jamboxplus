@@ -7,4 +7,5 @@ export * from './GlassPanel';
 export * from './GlassModal';
 export * from './GlassPill';
 export * from './AmbientGlassBackground';
-export { LiquidGlass } from '../LiquidGlass';
+export { Glass, LiquidGlass, useGlassSupport } from '../LiquidGlass';
+export type { GlassProps, LiquidGlassProps } from '../LiquidGlass';

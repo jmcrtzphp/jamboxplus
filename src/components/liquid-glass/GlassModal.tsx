@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-import { liquidGlass } from '../../lib/liquidGlass';
+import { liquidGlass, isLiquidGlassSupported } from '../../lib/liquidGlass';
 import { GlassIconButton } from './GlassIconButton';
 
 export interface GlassModalProps {
@@ -12,6 +12,7 @@ export interface GlassModalProps {
   maxWidth?: string;
   className?: string;
   showCloseButton?: boolean;
+  fallbackClassName?: string;
 }
 
 export function GlassModal({
@@ -21,9 +22,17 @@ export function GlassModal({
   children,
   maxWidth = 'max-w-4xl',
   className = '',
-  showCloseButton = true
+  showCloseButton = true,
+  fallbackClassName = 'GlassFallback'
 }: GlassModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [isSupported, setIsSupported] = useState<boolean>(() => isLiquidGlassSupported);
+
+  useEffect(() => {
+    setIsSupported(isLiquidGlassSupported);
+  }, []);
+
+  const shouldUseFallback = !isSupported;
 
   useEffect(() => {
     if (!isOpen || !modalRef.current) return;
@@ -33,6 +42,7 @@ export function GlassModal({
       border: 0.06,
       mapBlur: 12,
       blur: 32,
+      fallbackBlur: 12,
       saturate: 1.45,
       radius: 32
     });
@@ -52,6 +62,8 @@ export function GlassModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  const fallbackClass = shouldUseFallback ? `${fallbackClassName} glass-fallback` : '';
 
   return (
     <AnimatePresence>
@@ -75,7 +87,7 @@ export function GlassModal({
             exit={{ opacity: 0, scale: 0.94, y: 24 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             style={{ borderRadius: '32px' }}
-            className={`relative w-full ${maxWidth} max-h-[92vh] glass-strong glass-specular overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col z-10 border border-white/20 ${className}`}
+            className={`relative w-full ${maxWidth} max-h-[92vh] glass-strong glass-specular ${fallbackClass} overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col z-10 border border-white/20 ${className}`}
           >
             {/* Top Specular Edge Highlight */}
             <div className="absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-100 via-white to-transparent pointer-events-none blur-[0.2px]" />

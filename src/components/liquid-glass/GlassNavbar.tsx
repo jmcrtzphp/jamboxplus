@@ -1,19 +1,28 @@
-import React, { useRef, useEffect } from 'react';
-import { liquidGlass } from '../../lib/liquidGlass';
+import React, { useRef, useEffect, useState } from 'react';
+import { liquidGlass, isLiquidGlassSupported } from '../../lib/liquidGlass';
 
 export interface GlassNavbarProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   enableRefraction?: boolean;
+  fallbackClassName?: string;
 }
 
 export function GlassNavbar({
   children,
   className = '',
   enableRefraction = true,
+  fallbackClassName = 'GlassFallback',
   ...props
 }: GlassNavbarProps) {
   const navRef = useRef<HTMLDivElement>(null);
+  const [isSupported, setIsSupported] = useState<boolean>(() => isLiquidGlassSupported);
+
+  useEffect(() => {
+    setIsSupported(isLiquidGlassSupported);
+  }, []);
+
+  const shouldUseFallback = !enableRefraction || !isSupported;
 
   useEffect(() => {
     if (!enableRefraction || !navRef.current) return;
@@ -23,6 +32,7 @@ export function GlassNavbar({
       border: 0.08,
       mapBlur: 10,
       blur: 24,
+      fallbackBlur: 12,
       saturate: 1.45,
       radius: 9999
     });
@@ -33,10 +43,12 @@ export function GlassNavbar({
     };
   }, [enableRefraction]);
 
+  const fallbackClass = shouldUseFallback ? `${fallbackClassName} glass-fallback` : '';
+
   return (
     <nav
       ref={navRef}
-      className={`glass-nav glass-specular relative overflow-hidden flex items-center justify-between p-2 rounded-full ${className}`}
+      className={`glass-nav glass-specular ${fallbackClass} relative overflow-hidden flex items-center justify-between p-2 rounded-full ${className}`}
       {...props}
     >
       {/* Top Edge Specular Prismatic Line */}

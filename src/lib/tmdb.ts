@@ -169,14 +169,13 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
   
   const requestPromise = (async () => {
     try {
-      const res = await fetch(url, { signal });
+      const res = await fetch(url, signal ? { signal } : undefined);
       if (res.status === 429 && retries > 0) {
         await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
         return tmdbRequest<T>(endpoint, params, retries - 1, signal);
       }
       
       if (!res.ok) {
-        const errorText = await res.text().catch(() => '');
         let errorMessage = "Unable to connect. Check your connection and try again.";
         if (res.status === 401 || res.status === 403) errorMessage = "Invalid TMDB_API_KEY. Please check your API key in the environment variables.";
         if (res.status === 429) errorMessage = "Too many requests. Please try again shortly.";

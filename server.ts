@@ -194,27 +194,27 @@ const TMDB_GENRE_MAP: Record<number, string> = {
 };
 
 const GENRE_BACKDROPS: Record<string, string> = {
-  movie_28: "https://image.tmdb.org/t/p/w780/yDHYTfaA95btioP94roeyKpZ53.jpg",
-  movie_12: "https://image.tmdb.org/t/p/w780/8YFL5QQVPy3AgrEQxNYVSgiPEbe.jpg",
-  movie_16: "https://image.tmdb.org/t/p/w780/p5ozvmdgsmbWe0H8Xk74O7GVIYm.jpg",
-  movie_35: "https://image.tmdb.org/t/p/w780/yDHYTfaA95btioP94roeyKpZ53.jpg",
-  movie_80: "https://image.tmdb.org/t/p/w780/ga4OLm4qLxO1YMioZw3YdpR5qqb.jpg",
-  movie_99: "https://image.tmdb.org/t/p/w780/rLb2cw0iwACaLTq9N3PRXiUFqJJ.jpg",
-  movie_18: "https://image.tmdb.org/t/p/w780/rLb2cw0iwACaLTq9N3PRXiUFqJJ.jpg",
-  movie_10751: "https://image.tmdb.org/t/p/w780/p5ozvmdgsmbWe0H8Xk74O7GVIYm.jpg",
-  movie_14: "https://image.tmdb.org/t/p/w780/uKb22E2nlzr914qA9KyA5BQJ8sw.jpg",
-  movie_36: "https://image.tmdb.org/t/p/w780/rLb2cw0iwACaLTq9N3PRXiUFqJJ.jpg",
-  movie_27: "https://image.tmdb.org/t/p/w780/7h6TqPB3ES5RiCwhRQeOkOBAC4q.jpg",
-  movie_10402: "https://image.tmdb.org/t/p/w780/uKb22E2nlzr914qA9KyA5BQJ8sw.jpg",
-  movie_9648: "https://image.tmdb.org/t/p/w780/ik8684v57g0bT1gVv2a8k7E1P8k.jpg",
-  movie_10749: "https://image.tmdb.org/t/p/w780/uKb22E2nlzr914qA9KyA5BQJ8sw.jpg",
-  movie_878: "https://image.tmdb.org/t/p/w780/8YFL5QQVPy3AgrEQxNYVSgiPEbe.jpg",
-  movie_53: "https://image.tmdb.org/t/p/w780/3V4kLQg0kSqPLctI5ziYWuqAZYF.jpg",
-  movie_10752: "https://image.tmdb.org/t/p/w780/rLb2cw0iwACaLTq9N3PRXiUFqJJ.jpg",
-  movie_37: "https://image.tmdb.org/t/p/w780/4t0HfCqX53yT0s4qO4w368EepUj.jpg",
-  tv_10759: "https://image.tmdb.org/t/p/w780/uDgy6hyPd82kOHh6I95FLtLnj6p.jpg",
-  tv_10765: "https://image.tmdb.org/t/p/w780/etj5CuMuamBspGQ3VO007kth8ob.jpg",
-  tv_10768: "https://image.tmdb.org/t/p/w780/4t0HfCqX53yT0s4qO4w368EepUj.jpg"
+  movie_28: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop",
+  movie_12: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop",
+  movie_16: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1200&auto=format&fit=crop",
+  movie_35: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?q=80&w=1200&auto=format&fit=crop",
+  movie_80: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1200&auto=format&fit=crop",
+  movie_99: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop",
+  movie_18: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1200&auto=format&fit=crop",
+  movie_10751: "https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=1200&auto=format&fit=crop",
+  movie_14: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop",
+  movie_36: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=1200&auto=format&fit=crop",
+  movie_27: "https://images.unsplash.com/photo-1505635552518-3448ff116af3?q=80&w=1200&auto=format&fit=crop",
+  movie_10402: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop",
+  movie_9648: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=1200&auto=format&fit=crop",
+  movie_10749: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1200&auto=format&fit=crop",
+  movie_878: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop",
+  movie_53: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=1200&auto=format&fit=crop",
+  movie_10752: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=1200&auto=format&fit=crop",
+  movie_37: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200&auto=format&fit=crop",
+  tv_10759: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop",
+  tv_10765: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop",
+  tv_10768: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=1200&auto=format&fit=crop"
 };
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = 2): Promise<Response> {

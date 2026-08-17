@@ -278,7 +278,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
       saturate: 1.4,
       brightness: 1.04,
       radius: null as any,
-      fallbackBlur: 20,
+      fallbackBlur: 12,
       disabled: false
     },
     opts
@@ -286,10 +286,10 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
 
   const applyFallback = () => {
     try {
-      const frosted = `blur(${o.fallbackBlur}px) saturate(${o.saturate}) brightness(${o.brightness})`;
+      const frosted = `blur(${o.fallbackBlur || 12}px) saturate(${o.saturate}) brightness(${o.brightness})`;
       el.style.backdropFilter = frosted;
       (el.style as any).webkitBackdropFilter = frosted;
-      el.classList.add("lg-glass-fallback");
+      el.classList.add("GlassFallback", "glass-fallback", "lg-glass-fallback");
     } catch (_) {}
 
     return {
@@ -299,7 +299,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
         try {
           el.style.backdropFilter = "";
           (el.style as any).webkitBackdropFilter = "";
-          el.classList.remove("lg-glass-fallback");
+          el.classList.remove("GlassFallback", "glass-fallback", "lg-glass-fallback");
         } catch (_) {}
       },
     };

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { liquidGlass, LiquidGlassOptions } from '../../lib/liquidGlass';
+import React, { useEffect, useRef, useState } from 'react';
+import { liquidGlass, LiquidGlassOptions, isLiquidGlassSupported } from '../../lib/liquidGlass';
 
 export type GlassIntensity = 'subtle' | 'medium' | 'strong';
 
@@ -10,6 +10,7 @@ export interface GlassContainerProps extends React.HTMLAttributes<HTMLDivElement
   specular?: boolean;
   edgeGlare?: boolean;
   radius?: number | string;
+  fallbackClassName?: string;
   className?: string;
   children?: React.ReactNode;
 }
@@ -21,12 +22,20 @@ export function GlassContainer({
   specular = true,
   edgeGlare = false,
   radius,
+  fallbackClassName = 'GlassFallback',
   className = '',
   children,
   style,
   ...props
 }: GlassContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isSupported, setIsSupported] = useState<boolean>(() => isLiquidGlassSupported);
+
+  useEffect(() => {
+    setIsSupported(isLiquidGlassSupported);
+  }, []);
+
+  const shouldUseFallback = !enableRefraction || !isSupported || Boolean(refractionOptions?.disabled);
 
   useEffect(() => {
     if (!enableRefraction || !containerRef.current) return;
@@ -52,6 +61,7 @@ export function GlassContainer({
       mapBlur: refractionOptions?.mapBlur ?? 10,
       blur: refractionOptions?.blur ?? blurForIntensity[intensity],
       saturate: refractionOptions?.saturate ?? 1.4,
+      fallbackBlur: refractionOptions?.fallbackBlur ?? 12,
       radius: numericRadius,
       ...refractionOptions,
     });
@@ -69,6 +79,7 @@ export function GlassContainer({
     strong: 'glass-strong'
   }[intensity];
 
+  const fallbackClass = shouldUseFallback ? `${fallbackClassName} glass-fallback` : '';
   const specularClass = specular ? 'glass-specular' : '';
   const glareClass = edgeGlare ? 'glass-edge-glare' : '';
 
@@ -77,10 +88,18 @@ export function GlassContainer({
     ...style
   };
 
+  const combinedClasses = [
+    intensityClass,
+    fallbackClass,
+    specularClass,
+    glareClass,
+    className
+  ].filter(Boolean).join(' ');
+
   return (
     <div
       ref={containerRef}
-      className={`${intensityClass} ${specularClass} ${glareClass} ${className}`}
+      className={combinedClasses}
       style={dynamicStyle}
       {...props}
     >

@@ -86,6 +86,7 @@ export function FloatingNav({
   const [mapUrl, setMapUrl] = useState('');
   const pillRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Bottom Nav Reference
   const [bottomNavSize, setBottomNavSize] = useState({ w: 0, h: 0 });
@@ -279,46 +280,11 @@ export function FloatingNav({
       </svg>
 
       {/* Mobile Top Floating Elements */}
-      <div className="sm:hidden fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-black/80 to-transparent z-40 pointer-events-none" />
+      <div className="sm:hidden fixed top-0 left-0 w-full h-20 bg-gradient-to-b from-black/80 to-transparent z-40 pointer-events-none" />
       <div className="sm:hidden fixed top-4 left-4 z-50 pointer-events-auto cursor-pointer flex items-center gap-2" onClick={onBack}>
-        <Logo className="w-10 h-10" />
-        <JamBoxText className="text-[17px] ml-2" />
+        <Logo className="w-9 h-9" />
+        <JamBoxText className="text-[17px] ml-1.5" />
       </div>
-
-      {/* Mobile Search Bar */}
-      <AnimatePresence>
-        {activeTab === 'search' && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="sm:hidden fixed top-20 left-4 right-4 z-50 pointer-events-auto"
-          >
-            <div className="relative w-full">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search movies, TV shows, actors..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (e.target.value) saveRecentSearch(e.target.value);
-                }}
-                className="w-full bg-[#1A1D24]/95 backdrop-blur-md border border-white/10 rounded-full py-3 pl-10 pr-10 text-sm text-white placeholder-white/40 outline-none focus:border-amber-500/50 shadow-2xl"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => { setSearchQuery(''); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-1"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
         {/* Floating Glass Pill Container */}
@@ -601,55 +567,111 @@ export function FloatingNav({
 
       {/* Mobile Floating Bottom Nav */}
       <div className="sm:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div 
+        <motion.div 
           ref={bottomNavRef}
-          className="pointer-events-auto flex items-center justify-around w-full max-w-sm rounded-full p-2 transition-opacity duration-[260ms] ease-out"
+          layout
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="pointer-events-auto flex items-center w-full max-w-sm rounded-full p-1.5 transition-opacity duration-[260ms] ease-out min-h-[58px]"
           style={{
-            background: 'rgba(0, 0, 0, 0.4)',
-            boxShadow: 'inset 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.2)',
+            background: 'rgba(0, 0, 0, 0.5)',
+            boxShadow: 'inset 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.4)',
             ...(isLiquidSupported && bottomMapUrl ? {
               backdropFilter: 'url(#liquid-glass-bottom) blur(3px) saturate(1.5)',
               WebkitBackdropFilter: 'url(#liquid-glass-bottom) blur(3px) saturate(1.5)',
             } : {
-              backdropFilter: 'blur(16px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+              backdropFilter: 'blur(18px) saturate(1.5)',
+              WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
             })
           }}
         >
-          {(() => {
-            const mobileLinks = [
-              { id: 'movies', label: 'Movies', icon: Film },
-              { id: 'tv', label: 'TV Shows', icon: Tv },
-              { id: 'favorites', label: 'Favorites', icon: Bookmark },
-              { id: 'search', label: 'Search', icon: Search, action: () => { setIsSearchExpanded(true); setActiveTab('search'); } }
-            ];
-            return mobileLinks.map((link) => {
-              const isActive = activeTab === link.id;
-              const Icon = link.icon;
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => {
-                    if (link.action) {
-                      link.action();
-                    } else {
-                      setActiveTab(link.id);
-                    }
+          <AnimatePresence mode="wait">
+            {activeTab === 'search' ? (
+              <motion.div
+                key="mobile-search-mode"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.18 }}
+                className="w-full flex items-center gap-2 px-3 py-1"
+              >
+                <Search size={18} className="text-amber-500 shrink-0 ml-1" />
+                <input
+                  ref={mobileSearchInputRef}
+                  autoFocus
+                  type="text"
+                  placeholder="Search movies, TV shows..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value) saveRecentSearch(e.target.value);
                   }}
-                  className="relative flex flex-col items-center justify-center w-14 h-14 rounded-full text-white/70 hover:text-white transition-colors duration-200 outline-none"
-                  style={{ color: isActive ? '#fff' : 'rgba(255,255,255,0.7)' }}
+                  className="flex-1 bg-transparent text-sm text-white placeholder-white/40 outline-none font-medium py-1.5 min-w-0"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-1.5 text-white/50 hover:text-white rounded-full transition-colors cursor-pointer shrink-0"
+                    aria-label="Clear search text"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsSearchExpanded(false);
+                    setActiveTab('movies');
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold text-white/90 hover:text-white bg-white/10 active:bg-white/20 rounded-full transition-all shrink-0 cursor-pointer"
                 >
-                  <div 
-                     className={`absolute inset-0 bg-amber-500 rounded-full transition-opacity duration-[260ms] ease-out ${isActive ? 'opacity-15' : 'opacity-0'}`}
-                     style={{ zIndex: -1 }}
-                  />
-                  <Icon size={20} className="mb-1" />
-                  <span className="text-[10px] font-medium leading-none">{(link as any).mobileLabel || link.label}</span>
+                  Done
                 </button>
-              );
-            }); 
-          })()}
-        </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="mobile-nav-mode"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center justify-around w-full"
+              >
+                {[
+                  { id: 'movies', label: 'Movies', icon: Film },
+                  { id: 'tv', label: 'TV Shows', icon: Tv },
+                  { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' },
+                  { id: 'search', label: 'Search', icon: Search }
+                ].map((link) => {
+                  const isActive = activeTab === link.id;
+                  const Icon = link.icon;
+                  return (
+                    <button
+                      key={link.id}
+                      onClick={() => {
+                        if (link.id === 'search') {
+                          setIsSearchExpanded(true);
+                          setActiveTab('search');
+                          setTimeout(() => mobileSearchInputRef.current?.focus(), 60);
+                        } else {
+                          setActiveTab(link.id);
+                        }
+                      }}
+                      className="relative flex flex-col items-center justify-center w-14 h-13 rounded-full text-white/70 hover:text-white transition-colors duration-200 outline-none cursor-pointer"
+                      style={{ color: isActive ? '#fff' : 'rgba(255,255,255,0.7)' }}
+                    >
+                      <div 
+                         className={`absolute inset-0 bg-amber-500 rounded-full transition-opacity duration-[260ms] ease-out ${isActive ? 'opacity-15' : 'opacity-0'}`}
+                         style={{ zIndex: -1 }}
+                      />
+                      <Icon size={19} className="mb-0.5" />
+                      <span className="text-[10px] font-medium leading-none">{link.mobileLabel || link.label}</span>
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </>
   );

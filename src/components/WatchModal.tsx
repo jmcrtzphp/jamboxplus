@@ -7,6 +7,7 @@ import { CineSrcPlayer } from './CineSrcPlayer';
 import { Footer } from './Footer';
 import { getWatchProgress, WatchProgressItem, removeWatchProgress } from '../lib/cinesrc';
 import { GlassButton, GlassPill, GlassIconButton, GlassContainer } from './liquid-glass';
+import { usePullDownZoom } from '../hooks/usePullDownZoom';
 
 interface WatchModalProps {
   showId: string | null;
@@ -42,6 +43,16 @@ export function WatchModal({
   // Progress & Resume
   const [savedProgress, setSavedProgress] = useState<WatchProgressItem | null>(null);
   const [resumeStartAt, setResumeStartAt] = useState<number>(0);
+
+  // Pull-down zoom & stretch for modal hero banner
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const modalHeroRef = useRef<HTMLDivElement>(null);
+  const { imageScale: modalImageScale, contentY: modalContentY } = usePullDownZoom(modalHeroRef, {
+    scrollContainerRef,
+    maxScale: 1.25,
+    pullRange: 220,
+    contentParallaxRatio: -0.35,
+  });
 
   // Lock body scroll
   useEffect(() => {
@@ -358,7 +369,7 @@ export function WatchModal({
             <p className="text-white/60 text-sm font-medium animate-pulse">Loading show details...</p>
           </div>
         ) : show ? (
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-hide">
             {/* Top Video Stage / Hero Section */}
             <AnimatePresence mode="wait">
               {isPlaying ? (
@@ -479,26 +490,36 @@ export function WatchModal({
                 </div>
               </motion.div>
             ) : (
-              /* Backdrop Hero Banner */
-              <motion.div 
-                key="hero"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="relative h-[55vh] sm:h-[65vh] md:h-[70vh] w-full"
+              /* Backdrop Hero Banner with Pull-Down Zoom & Stretch */
+              <div 
+                ref={modalHeroRef}
+                style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
+                className="relative h-[55vh] sm:h-[65vh] md:h-[70vh] w-full overflow-hidden bg-black select-none"
               >
-                <img
-                  src={backdrop}
-                  alt={show.title}
-                  decoding="async"
-                  className="w-full h-full object-cover object-center filter brightness-100"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent w-full md:w-2/3" />
+                {/* 1. Sticky Hero Image Layer (Anchored at top 0, expands proportionally downward) */}
+                <motion.div 
+                  className="sticky top-0 inset-x-0 w-full h-full pointer-events-none will-change-transform"
+                  style={{ 
+                    scale: modalImageScale,
+                    transformOrigin: '50% 0%',
+                    WebkitTransformOrigin: '50% 0%',
+                  }}
+                >
+                  <img
+                    src={backdrop}
+                    alt={show.title}
+                    decoding="async"
+                    className="w-full h-full object-cover object-center filter brightness-100 will-change-transform"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent w-full md:w-2/3" />
+                </motion.div>
 
-                {/* Hero Overlay Info */}
-                <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 z-20">
+                {/* 2. Parallax Hero Overlay Info Layer */}
+                <motion.div 
+                  style={{ y: modalContentY }}
+                  className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 z-20 will-change-transform"
+                >
                   <div className="flex flex-wrap items-center gap-2.5 mb-3 text-xs sm:text-sm font-semibold">
                     <span className="text-yellow-400 font-bold bg-yellow-400/20 border border-yellow-400/30 px-2.5 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1">
                       <Star className="w-3 h-3 sm:w-[12px] sm:h-[12px] fill-yellow-400" /> {rating}
@@ -549,8 +570,8 @@ export function WatchModal({
                       {isFavorite ? 'In Favorites' : 'Add to Favorites'}
                     </GlassButton>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </div>
             )}
             </AnimatePresence>
 
