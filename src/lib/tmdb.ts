@@ -125,8 +125,23 @@ const apiCache = new Map<string, { data: any; timestamp: number }>();
 const inFlightRequests = new Map<string, Promise<any>>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
+export interface SearchSuggestion {
+  id: string;
+  title: string;
+  mediaType: 'movie' | 'tv' | 'person';
+  releaseYear: number | null;
+  rating: number | null;
+  poster: string | null;
+}
+
+export interface TrendingSearchItem {
+  id: string;
+  title: string;
+  type: 'movie' | 'series';
+}
+
 // The generic fetcher proxy
-async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}, retries = 3): Promise<T> {
+async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}, retries = 3, signal?: AbortSignal): Promise<T> {
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') {
@@ -136,7 +151,7 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
   
   const cacheKey = `${endpoint}?${query.toString()}`;
   
-  // Check cache first (skip caching for search endpoints if we want real-time, but for now we cache everything for speed)
+  // Check cache first
   if (apiCache.has(cacheKey)) {
     const cached = apiCache.get(cacheKey)!;
     if (Date.now() - cached.timestamp < CACHE_TTL) {
@@ -145,23 +160,23 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
     apiCache.delete(cacheKey);
   }
 
-  // Check if an identical request is already in-flight
-  if (inFlightRequests.has(cacheKey)) {
+  // Check if an identical request is already in-flight (only if no signal is attached)
+  if (!signal && inFlightRequests.has(cacheKey)) {
     return inFlightRequests.get(cacheKey);
   }
   
-  const url = `/api${endpoint}${query.toString() ? '?' + query.toString() : ''}`; console.log("FETCH URL:", url);
+  const url = `/api${endpoint}${query.toString() ? '?' + query.toString() : ''}`;
   
   const requestPromise = (async () => {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (res.status === 429 && retries > 0) {
         await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
-        return tmdbRequest<T>(endpoint, params, retries - 1);
+        return tmdbRequest<T>(endpoint, params, retries - 1, signal);
       }
       
       if (!res.ok) {
-        const errorText = await res.text();
+        const errorText = await res.text().catch(() => '');
         let errorMessage = "Unable to connect. Check your connection and try again.";
         if (res.status === 401 || res.status === 403) errorMessage = "Invalid TMDB_API_KEY. Please check your API key in the environment variables.";
         if (res.status === 429) errorMessage = "Too many requests. Please try again shortly.";
@@ -173,9 +188,12 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
       apiCache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw err;
+      }
       if (err.message === "Too many requests. Please try again shortly." && retries > 0) {
         await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
-        return tmdbRequest<T>(endpoint, params, retries - 1);
+        return tmdbRequest<T>(endpoint, params, retries - 1, signal);
       }
       throw err;
     } finally {
@@ -183,7 +201,9 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
     }
   })();
 
-  inFlightRequests.set(cacheKey, requestPromise);
+  if (!signal) {
+    inFlightRequests.set(cacheKey, requestPromise);
+  }
   return requestPromise;
 }
 
@@ -198,8 +218,8 @@ export async function fetchFilters(params: FilterParams): Promise<PaginatedResul
   };
 }
 
-export async function searchTitle(params: FilterParams): Promise<PaginatedResult<Show>> {
-  const data = await tmdbRequest<any>('/search', params);
+export async function searchTitle(params: FilterParams, signal?: AbortSignal): Promise<PaginatedResult<Show>> {
+  const data = await tmdbRequest<any>('/search', params, 3, signal);
   
   if (Array.isArray(data)) {
     return {
@@ -214,6 +234,25 @@ export async function searchTitle(params: FilterParams): Promise<PaginatedResult
     nextCursor: data.nextCursor,
     shows: (data.shows || data.result || []).map(normalizeShow)
   };
+}
+
+export async function fetchSearchSuggestions(query: string, signal?: AbortSignal): Promise<SearchSuggestion[]> {
+  try {
+    const data = await tmdbRequest<{ suggestions: SearchSuggestion[] }>('/search/suggestions', { q: query }, 1, signal);
+    return data.suggestions || [];
+  } catch (err: any) {
+    if (err.name === 'AbortError') throw err;
+    return [];
+  }
+}
+
+export async function fetchTrendingSearches(): Promise<TrendingSearchItem[]> {
+  try {
+    const data = await tmdbRequest<{ trending: TrendingSearchItem[] }>('/search/trending');
+    return data.trending || [];
+  } catch (_) {
+    return [];
+  }
 }
 
 

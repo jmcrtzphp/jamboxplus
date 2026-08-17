@@ -1,3 +1,4 @@
+cat << 'INNER_EOF' > replacement.txt
 app.get("/api/search", async (req, res) => {
   try {
     const query = req.query.title || req.query.query;
@@ -11,3 +12,8 @@ app.get("/api/search", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+INNER_EOF
+
+sed -i '/app.get("\/api\/search"/,/app.get("\/api\/shows\/:id"/c\
+'"$(cat replacement.txt | sed 's/$/\\/g' | sed '$s/\\$//')"'
+app.get("/api/shows/:id", async (req, res) => {' server.ts

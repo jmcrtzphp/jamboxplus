@@ -88,6 +88,7 @@ export function Movies({ onBack, onNavigate }: MoviesProps) {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onNavigate={onNavigate}
+        onSelectMovie={handleSelectMovie}
         favoritesCount={favorites.length}
       />
 
@@ -907,11 +908,13 @@ const GenreIcon = React.memo(function GenreIcon({ name, size = 20, className = '
   const IconMap: any = { Flame, Compass, Clapperboard, Laugh: Smile, Fingerprint, Camera, Star, Users, Wand2, Landmark, Skull, Music, Search, Heart, Rocket, Zap, Shield, Baby, Newspaper, Tv, Sparkles, Mic };
   const Icon = IconMap[name] || Film;
   return <Icon size={size} className={className} />;
-});
-
-function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFavorite, toggleFavorite }: any) {
+});function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFavorite, toggleFavorite }: any) {
   const [selectedGenre, setSelectedGenre] = useState<UnifiedGenre | null>(null);
   const [genreImages, setGenreImages] = useState<Record<string, string>>({});
+  const [searchTypeFilter, setSearchTypeFilter] = useState<'all' | 'movie' | 'series'>('all');
+  const [searchSort, setSearchSort] = useState<'default' | 'rating' | 'newest'>('default');
+  const [searchMinRating, setSearchMinRating] = useState<number>(0);
+  const [searchGenreFilter, setSearchGenreFilter] = useState<UnifiedGenre | null>(null);
 
   useEffect(() => {
     fetch('/api/genres/images')
@@ -969,10 +972,11 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const activeAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (searchQuery?.trim()) {
-      (() => { setSelectedGenre(null); window.history.pushState({}, '', '/'); })();
+      setSelectedGenre(null);
     }
   }, [searchQuery]);
 
@@ -985,20 +989,37 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
     }
 
     if (reset) {
+      if (activeAbortRef.current) {
+        activeAbortRef.current.abort();
+      }
+      activeAbortRef.current = new AbortController();
       setLoading(true);
       setShows([]);
     } else {
       setIsFetchingMore(true);
     }
 
+    const currentController = activeAbortRef.current;
+
     if (isSearch) {
-      searchTitle({ title: searchQuery.trim(), country, cursor: reset ? undefined : nextCursor, ...(selectedGenre ? { movie_genre: selectedGenre.movieId, tv_genre: selectedGenre.tvId } : {}) })
+      const activeGenre = searchGenreFilter;
+      searchTitle({
+        title: searchQuery.trim(),
+        country,
+        show_type: searchTypeFilter === 'all' ? undefined : searchTypeFilter,
+        cursor: reset ? undefined : nextCursor,
+        ...(activeGenre ? { movie_genre: activeGenre.movieId, tv_genre: activeGenre.tvId } : {})
+      }, currentController?.signal)
         .then(res => {
           setShows(prev => reset ? res.shows : [...prev, ...res.shows]);
           setHasMore(res.hasMore);
           setNextCursor(res.nextCursor);
         })
-        .catch(console.error)
+        .catch(err => {
+          if (err.name !== 'AbortError') {
+            console.error("Search error:", err);
+          }
+        })
         .finally(() => {
           setLoading(false);
           setIsFetchingMore(false);
@@ -1016,14 +1037,35 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
           setIsFetchingMore(false);
         });
     }
-  }, [searchQuery, selectedGenre, genreTypeFilter, country, nextCursor]);
+  }, [searchQuery, selectedGenre, genreTypeFilter, searchTypeFilter, searchGenreFilter, country, nextCursor]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       loadData(true);
-    }, searchQuery ? 100 : 0);
-    return () => clearTimeout(timer);
-  }, [searchQuery, selectedGenre, genreTypeFilter, country]);
+    }, searchQuery ? 120 : 0);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchQuery, selectedGenre, genreTypeFilter, searchTypeFilter, searchGenreFilter, country]);
+
+  // Client-side filtering & sorting for instant refinement
+  const processedShows = useMemo(() => {
+    let result = [...shows];
+
+    // Filter by rating
+    if (searchMinRating > 0) {
+      result = result.filter(s => (s.rating || 0) >= searchMinRating);
+    }
+
+    // Sort
+    if (searchSort === 'rating') {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (searchSort === 'newest') {
+      result.sort((a, b) => (b.releaseYear || 0) - (a.releaseYear || 0));
+    }
+
+    return result;
+  }, [shows, searchMinRating, searchSort]);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: any) => {
@@ -1046,6 +1088,7 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
         <button
           onClick={() => {
             setSearchQuery?.('');
+            setSearchGenreFilter(null);
             (() => { setSelectedGenre(null); window.history.pushState({}, '', '/'); })();
           }}
           className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
@@ -1058,13 +1101,17 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
         </button>
 
         {GENRE_LIST.map((genre) => {
-          const isSelected = selectedGenre?.id === genre.id;
+          const isSelected = selectedGenre?.id === genre.id || (isSearchActive && searchGenreFilter?.id === genre.id);
           return (
             <button
               key={genre.id}
               onClick={() => {
-                setSearchQuery?.('');
-                setSelectedGenre(genre);
+                if (isSearchActive) {
+                  setSearchGenreFilter(prev => prev?.id === genre.id ? null : genre);
+                } else {
+                  setSearchQuery?.('');
+                  setSelectedGenre(genre);
+                }
               }}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 ${
                 isSelected
@@ -1082,44 +1129,154 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
       {/* Case 1: Active Search Query */}
       {isSearchActive ? (
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Search size={22} className="text-amber-500" />
-              Search Results for <span className="text-amber-500">"{searchQuery}"</span>
-            </h2>
-            <button
-              onClick={() => setSearchQuery?.('')}
-              className="text-xs text-white/60 hover:text-white flex items-center gap-1 glass-subtle px-3 py-1.5 rounded-full cursor-pointer transition-colors"
-            >
-              Clear Search
-            </button>
+          {/* Search Header Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
+            <div>
+              <div className="flex items-center gap-2">
+                <Search size={22} className="text-amber-500" />
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                  Results for <span className="text-amber-500">"{searchQuery}"</span>
+                </h2>
+                {!loading && (
+                  <span className="text-xs bg-white/10 text-white/70 px-2.5 py-0.5 rounded-full font-medium">
+                    {processedShows.length} {processedShows.length === 1 ? 'title' : 'titles'}
+                  </span>
+                )}
+              </div>
+              {searchGenreFilter && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-xs text-white/50">Filtered by:</span>
+                  <span className="inline-flex items-center gap-1 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                    {searchGenreFilter.name}
+                    <button onClick={() => setSearchGenreFilter(null)} className="hover:text-white ml-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Filter Controls Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Type Selector (All / Movies / Shows) */}
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-0.5 text-xs">
+                {(['all', 'movie', 'series'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSearchTypeFilter(t)}
+                    className={`px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
+                      searchTypeFilter === t ? 'bg-amber-500 text-black font-semibold' : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    {t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV Shows'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sort Selector */}
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-0.5 text-xs">
+                <button
+                  onClick={() => setSearchSort('default')}
+                  className={`px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
+                    searchSort === 'default' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Best Match
+                </button>
+                <button
+                  onClick={() => setSearchSort('rating')}
+                  className={`px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
+                    searchSort === 'rating' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Top Rated
+                </button>
+                <button
+                  onClick={() => setSearchSort('newest')}
+                  className={`px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
+                    searchSort === 'newest' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Newest
+                </button>
+              </div>
+
+              {/* Min Rating Filter */}
+              <button
+                onClick={() => setSearchMinRating(prev => (prev === 0 ? 70 : prev === 70 ? 80 : 0))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1 ${
+                  searchMinRating > 0
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-white/5 text-white/60 border-white/10 hover:text-white'
+                }`}
+                title="Filter by rating"
+              >
+                <Star size={12} className={searchMinRating > 0 ? "fill-amber-400 text-amber-400" : ""} />
+                {searchMinRating === 0 ? 'Any Rating' : `${searchMinRating}%+ Only`}
+              </button>
+
+              <button
+                onClick={() => {
+                  setSearchQuery?.('');
+                  setSearchGenreFilter(null);
+                  setSearchMinRating(0);
+                  setSearchSort('default');
+                }}
+                className="text-xs text-white/60 hover:text-white flex items-center gap-1 glass-subtle px-3 py-1.5 rounded-full cursor-pointer transition-colors"
+              >
+                <X size={13} />
+                Clear
+              </button>
+            </div>
           </div>
 
           {loading && shows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-              <p className="text-sm text-white/50">Searching titles...</p>
+              <p className="text-sm text-white/50">Searching movies & series for "{searchQuery}"...</p>
             </div>
-          ) : shows.length === 0 ? (
-            <div className="text-center py-24 glass-subtle rounded-3xl p-8 max-w-lg mx-auto">
+          ) : processedShows.length === 0 ? (
+            <div className="text-center py-20 glass-subtle rounded-3xl p-8 max-w-lg mx-auto">
               <Search size={40} className="mx-auto text-white/20 mb-3" />
               <h3 className="text-lg font-medium text-white mb-1">No matches found</h3>
               <p className="text-sm text-white/50 max-w-md mx-auto mb-6">
-                We couldn't find anything matching "{searchQuery}". Try exploring our curated genres instead.
+                We couldn't find any results matching "{searchQuery}" with the current filters.
               </p>
-              <GlassButton
-                variant="primary"
-                onClick={() => setSearchQuery?.('')}
-              >
-                Browse Genres
-              </GlassButton>
+              <div className="space-y-4">
+                <div className="text-xs text-amber-400 font-semibold uppercase tracking-wider">
+                  Popular searches you might like
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {['Dune', 'Arcane', 'Avengers', 'Stranger Things', 'Spider-Man', 'Deadpool', 'Fallout', 'Oppenheimer'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setSearchQuery?.(t)}
+                      className="px-3 py-1 text-xs bg-white/5 hover:bg-white/15 text-white/80 rounded-full border border-white/10 transition-colors cursor-pointer"
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <div className="pt-2">
+                  <GlassButton
+                    variant="primary"
+                    onClick={() => {
+                      setSearchQuery?.('');
+                      setSearchGenreFilter(null);
+                      setSearchMinRating(0);
+                    }}
+                  >
+                    Browse All Genres
+                  </GlassButton>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 pb-20 content-auto">
-              {shows.map((show, index) => {
-                const isLast = index === shows.length - 1;
+              {processedShows.map((show, index) => {
+                const isLast = index === processedShows.length - 1;
                 return (
-                  <div key={show.id} ref={isLast ? lastElementRef : null}>
+                  <div key={`${show.id}-${index}`} ref={isLast ? lastElementRef : null}>
                     <MovieCard 
                       show={show} 
                       country={country}
@@ -1139,7 +1296,7 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
             </div>
           )}
         </div>
-            ) : selectedGenre ? (
+      ) : selectedGenre ? (
         /* Case 2: Selected Genre View */
         <div className="flex flex-col">
           {/* Back Button */}
