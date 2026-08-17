@@ -10,6 +10,7 @@ import { WatchModal } from './WatchModal';
 import { ContinueWatchingRow } from './ContinueWatchingRow';
 import { Footer } from './Footer';
 import { useElasticOverscroll } from '../hooks/useElasticOverscroll';
+import { usePullDownZoom } from '../hooks/usePullDownZoom';
 
 import { FloatingNav } from './FloatingNav';
 
@@ -406,12 +407,15 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
     return () => clearInterval(interval);
   }, [heroMovies, activeIndex]);
 
-  const { dragX, scale, handleDragEnd } = useElasticOverscroll({
+  const { dragX, scale: swipeScale, handleDragEnd } = useElasticOverscroll({
     activeIndex,
     itemCount: heroMovies?.length || 0,
     onSwipeLeft: () => setActiveIndex(i => i + 1),
     onSwipeRight: () => setActiveIndex(i => i - 1),
   });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pullDownScale = usePullDownZoom(containerRef);
 
   if (loading) {
     return <div className="h-[70vh] md:h-[80vh] w-full bg-[#14161B] animate-pulse" />;
@@ -426,13 +430,17 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
   const isFav = isFavorite(currentMovie.id);
 
   return (
-    <div className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black">
+    <motion.div 
+      ref={containerRef}
+      style={{ scale: pullDownScale, transformOrigin: 'top center' }}
+      className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black"
+    >
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
-        style={{ x: dragX, scale }}
+        style={{ x: dragX, scale: swipeScale }}
         className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
       >
       {/* Background Posters with cross-fade */}
@@ -513,7 +521,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
           />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 });
 
