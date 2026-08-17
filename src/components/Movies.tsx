@@ -246,7 +246,7 @@ const FavoriteItem = React.memo(function FavoriteItem({ id, country, onClick, is
   }, [id, country]);
 
   if (loading) {
-    return <div className="aspect-[2/3] bg-white/5 rounded-3xl animate-pulse" />;
+    return <SkeletonCard />;
   }
 
   if (!show) return null;
@@ -570,7 +570,7 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
         <div className="h-6 w-48 bg-white/10 rounded-full animate-pulse" />
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-[180px] h-[270px] bg-white/5 rounded-3xl flex-shrink-0 animate-pulse" />
+            <div key={i} className="w-[180px] flex-shrink-0"><SkeletonCard /></div>
           ))}
         </div>
       </div>
@@ -681,7 +681,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
         </div>
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-[180px] h-[270px] bg-white/5 rounded-3xl flex-shrink-0 animate-pulse" />
+            <div key={i} className="w-[180px] flex-shrink-0"><SkeletonCard /></div>
           ))}
         </div>
       </div>
@@ -922,7 +922,7 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
         {loading && shows.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] bg-white/5 animate-pulse rounded-3xl" />
+              <SkeletonCard key={i} />
             ))}
           </div>
         ) : shows.length === 0 ? (
@@ -955,6 +955,24 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
     </div>
   );
 }
+
+
+const SkeletonCard = React.memo(function SkeletonCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0.5 }}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      className="aspect-[2/3] w-full bg-white/5 rounded-3xl overflow-hidden relative shadow-lg"
+    >
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-2">
+        <div className="h-4 w-3/4 bg-white/10 rounded-full" />
+        <div className="h-3 w-1/2 bg-white/10 rounded-full" />
+      </div>
+    </motion.div>
+  );
+});
 
 const MovieCard = React.memo(function MovieCard({ 
   show, 
@@ -1143,9 +1161,10 @@ function GenreCatalogueView({
       {/* 2. Genre Catalogue Shows Grid */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto pt-8">
         {loading && shows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-            <p className="text-sm text-white/50">Loading {selectedGenre.name} titles...</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 content-auto">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : shows.length === 0 ? (
           <div className="text-center py-20 text-white/50">No titles found in this category.</div>
@@ -1474,10 +1493,11 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
           </div>
 
           {loading && shows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-              <p className="text-sm text-white/50">Searching movies & series for "{searchQuery}"...</p>
-            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 content-auto">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
           ) : processedShows.length === 0 ? (
             <div className="text-center py-20 glass-subtle rounded-3xl p-8 max-w-lg mx-auto">
               <Search size={40} className="mx-auto text-white/20 mb-3" />

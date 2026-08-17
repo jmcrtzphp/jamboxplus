@@ -26,6 +26,7 @@ export interface LiquidGlassOptions {
   brightness?: number;    // Brightness adjustment (default: 1.04)
   radius?: number | null; // Border radius in px (or auto-detected from element)
   fallbackBlur?: number;  // Fallback blur when SVG displacement is unsupported (default: 20)
+  fallbackBackground?: string; // Optional black background fallback (default: 'rgba(0,0,0,0.6)')
   disabled?: boolean;     // Force fallback (e.g. on low power devices or reduced motion)
 }
 
@@ -279,6 +280,7 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
       brightness: 1.04,
       radius: null as any,
       fallbackBlur: 12,
+      fallbackBackground: 'rgba(0, 0, 0, 0.75)',
       disabled: false
     },
     opts
@@ -289,6 +291,9 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
       const frosted = `blur(${o.fallbackBlur || 12}px) saturate(${o.saturate}) brightness(${o.brightness})`;
       el.style.backdropFilter = frosted;
       (el.style as any).WebkitBackdropFilter = frosted;
+      if (o.fallbackBackground) {
+        el.style.backgroundColor = o.fallbackBackground;
+      }
       el.classList.add("GlassFallback", "glass-fallback", "lg-glass-fallback");
     } catch (_) {}
 
@@ -299,6 +304,9 @@ export function liquidGlass(el: HTMLElement, opts: LiquidGlassOptions = {}) {
         try {
           el.style.backdropFilter = "";
           (el.style as any).WebkitBackdropFilter = "";
+          if (o.fallbackBackground) {
+            el.style.backgroundColor = "";
+          }
           el.classList.remove("GlassFallback", "glass-fallback", "lg-glass-fallback");
         } catch (_) {}
       },
