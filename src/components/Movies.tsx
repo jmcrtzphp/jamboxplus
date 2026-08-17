@@ -9,6 +9,7 @@ import { GlassButton, GlassPill, GlassContainer } from './liquid-glass';
 import { WatchModal } from './WatchModal';
 import { ContinueWatchingRow } from './ContinueWatchingRow';
 import { Footer } from './Footer';
+import { useElasticOverscroll } from '../hooks/useElasticOverscroll';
 
 import { FloatingNav } from './FloatingNav';
 
@@ -405,22 +406,12 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
     return () => clearInterval(interval);
   }, [heroMovies, activeIndex]);
 
-  const dragX = useMotionValue(0);
-  const scale = useTransform(dragX, (x) => {
-    if (typeof x !== 'number') return 1;
-    if (activeIndex === 0 && x > 0) return 1 + (x / 2500);
-    if (activeIndex === heroMovies.length - 1 && x < 0) return 1 - (x / 2500);
-    return 1;
+  const { dragX, scale, handleDragEnd } = useElasticOverscroll({
+    activeIndex,
+    itemCount: heroMovies?.length || 0,
+    onSwipeLeft: () => setActiveIndex(i => i + 1),
+    onSwipeRight: () => setActiveIndex(i => i - 1),
   });
-
-  const handleDragEnd = (e: any, { offset, velocity }: any) => {
-    const swipePower = Math.abs(offset.x) * velocity.x;
-    if (offset.x > 80 || swipePower > 500) {
-      if (activeIndex > 0) setActiveIndex(i => i - 1);
-    } else if (offset.x < -80 || swipePower < -500) {
-      if (activeIndex < heroMovies.length - 1) setActiveIndex(i => i + 1);
-    }
-  };
 
   if (loading) {
     return <div className="h-[70vh] md:h-[80vh] w-full bg-[#14161B] animate-pulse" />;
