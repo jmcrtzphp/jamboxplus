@@ -349,13 +349,13 @@ export function WatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#0A0C10]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#0F1113]">
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
-        className="relative w-full h-full bg-[#0A0C10] overflow-y-auto overflow-x-hidden flex flex-col z-10 text-white"
+        className="relative w-full h-full bg-[#0F1113] overflow-y-auto overflow-x-hidden flex flex-col z-10 text-white"
       >
         {/* Top Edge Specular Highlight - Desktop Only */}
         <div className="hidden sm:block absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-100 via-white to-transparent pointer-events-none blur-[0.2px] z-30" />
@@ -435,7 +435,7 @@ export function WatchModal({
                 transition={{ duration: 0.3 }}
                 ref={modalHeroRef}
                 style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
-                className="relative h-[55vh] sm:h-[65vh] md:h-[70vh] w-full overflow-hidden bg-black select-none"
+                className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden bg-black select-none"
               >
                 {/* 1. Sticky Hero Image Layer (Anchored at top 0, expands proportionally downward) */}
                 <motion.div 
@@ -463,42 +463,49 @@ export function WatchModal({
                       decoding="sync"
                       loading="eager"
                       fetchPriority="high"
-                      className="w-full h-full object-cover object-center filter brightness-100 will-change-transform"
+                      className="w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent w-full md:w-2/3" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent z-0" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0" />
                 </motion.div>
 
                 {/* 2. Parallax Hero Overlay Info Layer */}
                 <motion.div 
                   style={{ y: modalContentY }}
-                  className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 z-20 will-change-transform"
+                  className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-0 right-0 px-6 sm:px-0 sm:left-6 md:left-8 lg:left-12 xl:left-16 sm:right-auto flex flex-col items-center text-center sm:items-start sm:text-left max-w-2xl z-10 pb-2 sm:pb-0 pointer-events-none will-change-transform"
                 >
-                  <div className="flex flex-wrap items-center gap-2.5 mb-3 text-xs sm:text-sm font-semibold">
-                    <span className="text-yellow-400 font-bold bg-yellow-400/20 border border-yellow-400/30 px-2.5 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1">
-                      <Star className="w-3 h-3 sm:w-[12px] sm:h-[12px] fill-yellow-400" /> {rating}
-                    </span>
-                    <span>{show.releaseYear}</span>
-                    {show.runtime && <span>• {show.runtime}m</span>}
+                  <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2.5 mb-3 text-xs sm:text-sm font-semibold pointer-events-auto">
+                    {rating && rating !== 'NR' && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-subtle text-yellow-300 text-xs font-bold shadow-md">
+                        <Star size={13} className="fill-yellow-400 text-yellow-400" />
+                        <span>{rating} Rating</span>
+                      </div>
+                    )}
+                    <span className="px-3 py-1 rounded-full glass-subtle text-white/90 text-xs font-bold shadow-md">{show.releaseYear}</span>
+                    {show.runtime && <span className="px-3 py-1 rounded-full glass-subtle text-white/90 text-xs font-bold shadow-md">{show.runtime}m</span>}
                     <GlassPill variant="accent" size="xs">
                       {isMovie ? 'MOVIE' : `TV SERIES (${show.seasonCount || 1} SEASONS)`}
                     </GlassPill>
                   </div>
 
-                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight drop-shadow-lg leading-tight">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg leading-tight transition-all duration-500">
                     {show.title}
                   </h1>
 
+                  <p className="text-white/80 text-sm md:text-base line-clamp-3 mb-6 font-normal drop-shadow leading-relaxed max-w-xl transition-all duration-500 pointer-events-auto">
+                    {show.overview || 'No plot summary available.'}
+                  </p>
+
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center gap-3.5">
+                  <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 pointer-events-auto">
                     <GlassButton
                       variant="primary"
-                      size="lg"
+                      size="md"
                       onClick={() => handleStartPlayback(true)}
                       className="cursor-pointer shadow-[0_0_25px_rgba(245,158,11,0.5)]"
                     >
-                      <Play className="w-4 h-4 sm:w-[18px] sm:h-[18px] fill-white" />
+                      <Play size={17} className="fill-white" />
                       {savedProgress && savedProgress.currentTime > 15 && savedProgress.percentage < 92
                         ? `Resume (${formatSeconds(savedProgress.currentTime)})`
                         : (isMovie ? 'Play Movie' : `Play S${selectedSeason}:E${selectedEpisode}`)}
@@ -509,9 +516,9 @@ export function WatchModal({
                         variant="secondary"
                         size="md"
                         onClick={() => handleStartPlayback(false)}
-                        className="cursor-pointer text-xs"
+                        className="cursor-pointer"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" /> Play from Start
+                        <RotateCcw size={17} /> Play from Start
                       </GlassButton>
                     )}
 
@@ -521,8 +528,8 @@ export function WatchModal({
                       onClick={(e) => onToggleFavorite(e, show.id)}
                       className="cursor-pointer"
                     >
-                      {isFavorite ? <Check className="w-4 h-4 sm:w-[16px] sm:h-[16px] text-green-400" /> : <Plus className="w-4 h-4 sm:w-[16px] sm:h-[16px]" />}
-                      {isFavorite ? 'In Favorites' : 'Add to Favorites'}
+                      {isFavorite ? <Check size={17} className="text-green-400" /> : <Plus size={17} />}
+                      {isFavorite ? 'Saved' : 'Favorites'}
                     </GlassButton>
                   </div>
                 </motion.div>
@@ -655,20 +662,9 @@ export function WatchModal({
                 </div>
               )}
 
-              {/* Main Metadata & Overview Layout */}
-              <div className="flex flex-col md:flex-row gap-8 pt-4">
-                
-                <div className="flex-1 space-y-6">
-                  <div>
-                    <h3 className="text-sm font-bold text-white/50 uppercase tracking-wider mb-2">Overview</h3>
-                    <p className="text-sm sm:text-base text-white/90 leading-relaxed font-normal">
-                      {show.overview || 'No plot summary available.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Sidebar Cast & Director Metadata */}
-                <div className="w-full md:w-64 shrink-0 space-y-5 text-xs sm:text-sm glass-subtle p-5 rounded-2xl border border-white/10 self-start">
+              {/* Main Metadata Layout */}
+              <div className="pt-6 border-t border-white/5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-xs sm:text-sm">
                   <div>
                     <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Cast</span>
                     <div className="text-white/90 leading-relaxed font-medium">
@@ -690,9 +686,9 @@ export function WatchModal({
                     </div>
                   )}
                   <div>
-                    <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">TMDB ID</span>
-                    <div className="text-white/70 font-mono text-xs">
-                      #{tmdbId}
+                    <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Details</span>
+                    <div className="text-white/70 font-mono text-xs font-medium">
+                      TMDB #{tmdbId}
                     </div>
                   </div>
                 </div>
