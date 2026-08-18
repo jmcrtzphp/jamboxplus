@@ -10,6 +10,11 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// Prevent unwanted pinch-to-zoom and gesture zooming on mobile devices to preserve fixed proportions
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
 const originalConsoleError = console.error;
 console.error = (...args) => {
   if (typeof args[0] === 'string' && args[0].includes('failed to connect to websocket')) {

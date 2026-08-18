@@ -44,12 +44,12 @@ export function WatchModal({
   const [savedProgress, setSavedProgress] = useState<WatchProgressItem | null>(null);
   const [resumeStartAt, setResumeStartAt] = useState<number>(0);
 
-  // Pull-down zoom & stretch for modal hero banner
+  // Pull-down stretch for modal hero banner (fixed 1:1 proportion without zooming)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const modalHeroRef = useRef<HTMLDivElement>(null);
   const { imageScale: modalImageScale, contentY: modalContentY } = usePullDownZoom(modalHeroRef, {
     scrollContainerRef,
-    maxScale: 1.25,
+    maxScale: 1.0,
     pullRange: 220,
     contentParallaxRatio: -0.35,
   });

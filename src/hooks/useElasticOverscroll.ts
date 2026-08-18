@@ -15,18 +15,8 @@ export function useElasticOverscroll({
 }: UseElasticOverscrollProps) {
   const dragX = useMotionValue(0);
 
-  // Calculate base scale based on drag stretch
-  // Only stretch when dragging past the boundaries (first or last item)
-  const rawScale = useTransform(dragX, (x) => {
-    if (typeof x !== 'number') return 1;
-    if (activeIndex === 0 && x > 0) {
-      return 1 + (x / 2500); // Stretch zoom when pulling at start
-    }
-    if (activeIndex === itemCount - 1 && x < 0) {
-      return 1 - (x / 2500); // Stretch zoom when pulling at end
-    }
-    return 1;
-  });
+  // Keep fixed 1:1 scale proportion without stretching or zooming on mobile swipes
+  const rawScale = useTransform(dragX, () => 1);
 
   // Apply a spring to the scale for fluid elasticity and a natural bounce-back
   const scale = useSpring(rawScale, {

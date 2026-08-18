@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Search, X, Film, Tv, Radio, Bookmark, Star, Clock, Trash2, ArrowRight, Loader2 } from 'lucide-react';
+import { Play, Search, X, Film, Tv, Radio, Bookmark, Star, Clock, Trash2, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { Logo, JamBoxText } from './Logo';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchSearchSuggestions, SearchSuggestion } from '../lib/tmdb';
@@ -219,7 +219,7 @@ export function FloatingNav({
   const links: Array<{ id: string, label: string, icon: any, mobileLabel?: string, action?: () => void }> = [
     { id: 'movies', label: 'Movies', icon: Film },
     { id: 'tv', label: 'TV Shows', icon: Tv },
-    { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' }
+        { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' }
   ];
 
   return (
@@ -639,7 +639,7 @@ export function FloatingNav({
                 {[
                   { id: 'movies', label: 'Movies', icon: Film },
                   { id: 'tv', label: 'TV Shows', icon: Tv },
-                  { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' },
+                                    { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' },
                   { id: 'search', label: 'Search', icon: Search }
                 ].map((link) => {
                   const isActive = activeTab === link.id;

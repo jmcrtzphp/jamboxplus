@@ -18,7 +18,7 @@ export function usePullDownZoom(
 ) {
   const { 
     scrollContainerRef, 
-    maxScale = 1.22, 
+    maxScale = 1.0, 
     pullRange = 220, 
     contentParallaxRatio = -0.35 
   } = options;
@@ -34,7 +34,7 @@ export function usePullDownZoom(
     restDelta: 0.001
   });
 
-  // 1. Proportional Image Scale: strictly 1.0 -> maxScale (default 1.22) from top center (50% 0%)
+  // 1. Proportional Image Scale: strictly fixed at 1.0 (no distortion/zooming on mobile)
   const imageScale = useTransform(springPull, [0, pullRange], [1.0, maxScale], { clamp: true });
 
   // 2. Parallax Content Layer: negative translation offset

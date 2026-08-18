@@ -31,6 +31,10 @@ function saveVisits() {
 
 const visitClients = new Set<express.Response>();
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.get("/api/visits", (req, res) => {
   if (req.headers.accept && req.headers.accept.includes("text/event-stream")) {
     res.setHeader("Content-Type", "text/event-stream");
@@ -335,12 +339,15 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
     imageSet: {
       poster: posterPath,
       verticalPoster: {
-        w720: posterPath,
-        w480: posterPath
+        w240: item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w185${item.poster_path}`) : posterPath,
+        w360: item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w342${item.poster_path}`) : posterPath,
+        w480: posterPath,
+        w720: item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w780${item.poster_path}`) : posterPath
       },
       horizontalPoster: {
-        w1080: backdropPath1080,
-        w720: backdropPath720
+        w360: item.backdrop_path ? (item.backdrop_path.startsWith('http') ? item.backdrop_path : `https://image.tmdb.org/t/p/w300${item.backdrop_path}`) : backdropPath720,
+        w720: backdropPath720,
+        w1080: backdropPath1080
       }
     },
     streamingOptions,

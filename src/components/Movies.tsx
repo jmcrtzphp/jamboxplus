@@ -6,7 +6,8 @@ import { GENRES, GENRE_LIST, DEFAULT_GENRE_IMAGES, UnifiedGenre } from '../lib/g
 
 import { PLATFORMS, StreamingPlatformIcon, resolvePlatform, PlatformBadge } from '../lib/platforms';
 import { GlassButton, GlassPill, GlassContainer } from './liquid-glass';
-import { WatchModal } from './WatchModal';
+import { lazy, Suspense } from 'react';
+const WatchModal = lazy(() => import('./WatchModal').then(module => ({ default: module.WatchModal })));
 import { ContinueWatchingRow } from './ContinueWatchingRow';
 import { Footer } from './Footer';
 import { useElasticOverscroll } from '../hooks/useElasticOverscroll';
@@ -192,7 +193,11 @@ export function Movies({ onBack, onNavigate, onOpenCookies, onOpenPrivacy, onOpe
                   key={`${id}-${index}`} 
                   id={id} 
                   country={country} 
-                  onClick={() => handleSelectMovie(id)} 
+                  onClick={() => {
+                    
+                      handleSelectMovie(id);
+                    
+                  }} 
                   isFavorite={true} 
                   onToggleFavorite={toggleFavorite} 
                 />
@@ -214,14 +219,14 @@ export function Movies({ onBack, onNavigate, onOpenCookies, onOpenPrivacy, onOpe
 
       {/* Watch & Playback Modal - Liquid Glass with CineSrc Player */}
       <AnimatePresence>
-        {selectedMovieId && (
-          <WatchModal key={selectedMovieId} onSelectRelated={handleSelectMovie} 
+                {selectedMovieId && (
+          <Suspense fallback={null}><WatchModal key={selectedMovieId} onSelectRelated={handleSelectMovie} 
              showId={selectedMovieId} 
              country={country} 
              onClose={handleCloseModal} 
              isFavorite={isFavorite(selectedMovieId)}
             onToggleFavorite={toggleFavorite}
-          />
+          /></Suspense>
         )}
       </AnimatePresence>
     </div>
@@ -234,20 +239,24 @@ const FavoriteItem = React.memo(function FavoriteItem({ id, country, onClick, is
 
   useEffect(() => {
     let isMounted = true;
-    fetchShowDetails(id, country).then(res => {
-      if (isMounted) {
-        setShow(res);
-        setLoading(false);
-      }
-    }).catch(() => {
-      if (isMounted) setLoading(false);
-    });
+    fetchShowDetails(id, country)
+      .then((res) => {
+        if (isMounted) {
+          setShow(res);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
     return () => { isMounted = false; };
   }, [id, country]);
 
   if (loading) {
     return <SkeletonCard />;
   }
+
+  
 
   if (!show) return null;
 
@@ -263,7 +272,7 @@ const FavoriteItem = React.memo(function FavoriteItem({ id, country, onClick, is
 });
 
 function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavorite, toggleFavorite, onSeeAll }: any) {
-  const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'movie', order_by: 'popularity_1week' }), [country]);
+  const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'movie', order_by: 'top_rated' }), [country]);
 
   return (
     <div className="space-y-12">
@@ -281,7 +290,7 @@ function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavor
         <ContinueWatchingRow onSelect={onSelectMovie} filterType="movie" />
 
         <CategoryRow 
-          title="Trending Movies" 
+          title="Top Rated Movies" 
           fetcher={trendingFetcher} 
           onSelect={onSelectMovie} 
           isFavorite={isFavorite}
@@ -307,7 +316,7 @@ function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavor
 }
 
 function TVShowsView({ country, heroTVs, setHeroTVs, onSelectMovie, isFavorite, toggleFavorite, onSeeAll }: any) {
-  const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'series', order_by: 'popularity_1week' }), [country]);
+  const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'series', order_by: 'top_rated' }), [country]);
 
   return (
     <div className="space-y-12">
@@ -325,7 +334,7 @@ function TVShowsView({ country, heroTVs, setHeroTVs, onSelectMovie, isFavorite, 
         <ContinueWatchingRow onSelect={onSelectMovie} filterType="tv" />
 
         <CategoryRow 
-          title="Trending TV Series" 
+          title="Top Rated TV Series" 
           fetcher={trendingFetcher} 
           onSelect={onSelectMovie} 
           isFavorite={isFavorite}
@@ -358,11 +367,11 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
     let isMounted = true;
     if (!heroMovies || heroMovies.length === 0) {
       fetchFilters({ country, show_type: type, order_by: 'popularity_1week' }).then(res => {
-        if (isMounted && res.shows.length > 0) {
+        if (isMounted && res?.shows?.length > 0) {
           setHeroMovies(res.shows.slice(0, 5));
         }
       }).catch(err => {
-        console.error("HeroBanner fetch error:", err);
+        console.error("HeroBanner fetch error:", err?.message || err);
       }).finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -425,7 +434,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
         >
           {/* Background Posters with cross-fade */}
           {heroMovies.map((movie: any, idx: number) => {
-            const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
+            const bg = movie.imageSet?.horizontalPoster?.w720 || movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
             return (
               <img 
                 key={`${movie.id}-${idx}`}
@@ -530,7 +539,7 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
           setIsInView(true);
           observer.disconnect();
         }
-      }, { rootMargin: '300px 300px 300px 300px' });
+      }, { rootMargin: '200px' });
       
       observer.observe(containerRef.current);
       return () => observer.disconnect();
@@ -638,7 +647,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
           setIsInView(true);
           observer.disconnect();
         }
-      }, { rootMargin: '300px 300px 300px 300px' });
+      }, { rootMargin: '200px' });
       
       observer.observe(containerRef.current);
       return () => observer.disconnect();
@@ -989,7 +998,7 @@ const MovieCard = React.memo(function MovieCard({
   isFavorite: boolean;
   onToggleFavorite: (e: React.MouseEvent, id: string) => void;
 }) {
-  const poster = show.imageSet?.verticalPoster?.w360 || show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+  const poster = show.imageSet?.verticalPoster?.w240 || show.imageSet?.verticalPoster?.w360 || show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
   const resolvedPlatform = useMemo(() => resolvePlatform(platformId, show, country), [platformId, show, country]);
   
   const rawRating = show.rating;
