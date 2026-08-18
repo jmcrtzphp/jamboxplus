@@ -219,7 +219,8 @@ export function FloatingNav({
   const links: Array<{ id: string, label: string, icon: any, mobileLabel?: string, action?: () => void }> = [
     { id: 'movies', label: 'Movies', icon: Film },
     { id: 'tv', label: 'TV Shows', icon: Tv },
-        { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' }
+    { id: 'anime', label: 'Anime', icon: Sparkles },
+    { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' }
   ];
 
   return (
@@ -639,7 +640,8 @@ export function FloatingNav({
                 {[
                   { id: 'movies', label: 'Movies', icon: Film },
                   { id: 'tv', label: 'TV Shows', icon: Tv },
-                                    { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' },
+                  { id: 'anime', label: 'Anime', icon: Sparkles },
+                  { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites' },
                   { id: 'search', label: 'Search', icon: Search }
                 ].map((link) => {
                   const isActive = activeTab === link.id;

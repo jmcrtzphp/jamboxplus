@@ -165,18 +165,11 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
     return inFlightRequests.get(cacheKey);
   }
   
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const queryString = query.toString();
-  const url = `/api${cleanEndpoint}${queryString ? '?' + queryString : ''}`;
+  const url = `/api${endpoint}${query.toString() ? '?' + query.toString() : ''}`;
   
   const requestPromise = (async () => {
     try {
-      const fetchOptions: RequestInit = {};
-      if (signal) {
-        fetchOptions.signal = signal;
-      }
-      
-      const res = await fetch(url, fetchOptions);
+      const res = await fetch(url, signal ? { signal } : undefined);
       if (res.status === 429 && retries > 0) {
         await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
         return tmdbRequest<T>(endpoint, params, retries - 1, signal);
