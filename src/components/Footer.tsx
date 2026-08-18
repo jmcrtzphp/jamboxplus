@@ -55,8 +55,7 @@ export const Footer: React.FC<{ onOpenCookies?: () => void, onOpenPrivacy?: () =
             <ul className="space-y-4">
               <li><a href="#" className="text-white/50 hover:text-amber-500 text-sm transition-colors">Movies</a></li>
               <li><a href="#" className="text-white/50 hover:text-amber-500 text-sm transition-colors">TV Shows</a></li>
-              <li><a href="#" className="text-white/50 hover:text-amber-500 text-sm transition-colors">Anime</a></li>
-              <li><a href="#" className="text-white/50 hover:text-amber-500 text-sm transition-colors">Favorites</a></li>
+                            <li><a href="#" className="text-white/50 hover:text-amber-500 text-sm transition-colors">Favorites</a></li>
             </ul>
           </div>
 

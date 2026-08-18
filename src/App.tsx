@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Movies } from './components/Movies';
-import { CookieBanner, CookiePreferences, PrivacyPolicy, TermsOfService } from './components/Legal';
+
+const CookieBanner = lazy(() => import('./components/Legal').then(module => ({ default: module.CookieBanner })));
+const CookiePreferences = lazy(() => import('./components/Legal').then(module => ({ default: module.CookiePreferences })));
+const PrivacyPolicy = lazy(() => import('./components/Legal').then(module => ({ default: module.PrivacyPolicy })));
+const TermsOfService = lazy(() => import('./components/Legal').then(module => ({ default: module.TermsOfService })));
 
 const pageTransition = {
   initial: { opacity: 0, x: 40 },
@@ -43,14 +47,18 @@ export default function App() {
             />
         </motion.div>
       </AnimatePresence>
-      
-      <CookieBanner onOpenPreferences={() => setShowCookies(true)} />
-      
-      <AnimatePresence>
-        {showCookies && <CookiePreferences key="cookies" onClose={() => setShowCookies(false)} onOpenPrivacy={() => { setShowCookies(false); setShowPrivacy(true); }} />}
-        {showPrivacy && <PrivacyPolicy key="privacy" onClose={() => setShowPrivacy(false)} />}
-        {showTerms && <TermsOfService key="terms" onClose={() => setShowTerms(false)} />}
-      </AnimatePresence>
+
+      <Suspense fallback={null}>
+        <CookieBanner onOpenPreferences={() => setShowCookies(true)} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          {showCookies && <CookiePreferences key="cookies" onClose={() => setShowCookies(false)} onOpenPrivacy={() => { setShowCookies(false); setShowPrivacy(true); }} />}
+          {showPrivacy && <PrivacyPolicy key="privacy" onClose={() => setShowPrivacy(false)} />}
+          {showTerms && <TermsOfService key="terms" onClose={() => setShowTerms(false)} />}
+        </AnimatePresence>
+      </Suspense>
     </>
   );
 }
