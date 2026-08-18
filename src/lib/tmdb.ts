@@ -64,7 +64,7 @@ export interface Show {
   imageSet?: {
     poster?: string;
     verticalPoster?: { w240?: string; w360?: string; w480?: string; w600?: string; w720?: string; };
-    horizontalPoster?: { w360?: string; w480?: string; w720?: string; w1080?: string; };
+    horizontalPoster?: { w360?: string; w480?: string; w720?: string; w1080?: string; original?: string; };
   };
   streamingOptions?: Record<string, StreamingOption[]>;
   seasonCount?: number;

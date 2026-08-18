@@ -314,6 +314,9 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
     ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w500${item.poster_path}`)
     : (item.imageSet?.poster || undefined);
 
+  const backdropPathOriginal = item.backdrop_path 
+    ? (item.backdrop_path.startsWith('http') ? item.backdrop_path : `https://image.tmdb.org/t/p/original${item.backdrop_path}`)
+    : (item.imageSet?.horizontalPoster?.original || posterPath);
   const backdropPath1080 = item.backdrop_path 
     ? (item.backdrop_path.startsWith('http') ? item.backdrop_path : `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`)
     : (item.imageSet?.horizontalPoster?.w1080 || posterPath);
@@ -347,7 +350,8 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
       horizontalPoster: {
         w360: item.backdrop_path ? (item.backdrop_path.startsWith('http') ? item.backdrop_path : `https://image.tmdb.org/t/p/w300${item.backdrop_path}`) : backdropPath720,
         w720: backdropPath720,
-        w1080: backdropPath1080
+        w1080: backdropPath1080,
+        original: backdropPathOriginal
       }
     },
     streamingOptions,

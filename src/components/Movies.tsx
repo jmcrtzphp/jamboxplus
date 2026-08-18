@@ -434,7 +434,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
         >
           {/* Background Posters with cross-fade */}
           {heroMovies.map((movie: any, idx: number) => {
-            const bg = movie.imageSet?.horizontalPoster?.w720 || movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.poster;
+            const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.horizontalPoster?.original || movie.imageSet?.horizontalPoster?.w720 || movie.imageSet?.poster;
             return (
               <img 
                 key={`${movie.id}-${idx}`}
@@ -998,7 +998,7 @@ const MovieCard = React.memo(function MovieCard({
   isFavorite: boolean;
   onToggleFavorite: (e: React.MouseEvent, id: string) => void;
 }) {
-  const poster = show.imageSet?.verticalPoster?.w240 || show.imageSet?.verticalPoster?.w360 || show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+  const poster = show.imageSet?.verticalPoster?.w480 || show.imageSet?.verticalPoster?.w360 || show.imageSet?.verticalPoster?.w240 || show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
   const resolvedPlatform = useMemo(() => resolvePlatform(platformId, show, country), [platformId, show, country]);
   
   const rawRating = show.rating;

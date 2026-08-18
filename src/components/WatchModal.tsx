@@ -330,7 +330,7 @@ export function WatchModal({
   const tmdbId = show?.tmdbId || showId.replace(/^(movie|tv|series)-/, '');
   const isMovie = show?.showType === 'movie';
   const poster = show?.imageSet?.poster;
-  const backdrop = show?.imageSet?.horizontalPoster?.w1080 || show?.imageSet?.horizontalPoster?.w720 || poster;
+  const backdrop = show?.imageSet?.horizontalPoster?.original || show?.imageSet?.horizontalPoster?.w1080 || show?.imageSet?.horizontalPoster?.w720 || poster;
   const rating = show?.rating ? (show.rating / 10).toFixed(1) : 'NR';
 
   // Find official trailer
