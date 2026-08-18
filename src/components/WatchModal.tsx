@@ -301,6 +301,17 @@ export function WatchModal({
     exitFullscreenAndRestoreOrientation();
   }, [exitFullscreenAndRestoreOrientation]);
 
+  // Escape key listener for exiting playback
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPlaying) {
+        handleStopPlayback();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, handleStopPlayback]);
+
   const handleToggleFullscreen = useCallback(() => {
     if (isFullscreen) {
       exitFullscreenAndRestoreOrientation();
@@ -322,6 +333,14 @@ export function WatchModal({
   const backdrop = show?.imageSet?.horizontalPoster?.w1080 || show?.imageSet?.horizontalPoster?.w720 || poster;
   const rating = show?.rating ? (show.rating / 10).toFixed(1) : 'NR';
 
+  // Find official trailer
+  const trailer = show?.videos?.find(
+    (video: any) => video.site === "YouTube" && video.type === "Trailer" && video.official
+  ) || show?.videos?.find(
+    (video: any) => video.site === "YouTube" && video.type === "Trailer"
+  );
+  const trailerUrl = trailer ? `https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&loop=1&playlist=${trailer.key}&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&autohide=1&cc_load_policy=0` : null;
+
   // Format saved progress time
   const formatSeconds = (sec: number) => {
     const mins = Math.floor(sec / 60);
@@ -330,38 +349,25 @@ export function WatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 md:p-6 lg:p-8 overflow-hidden bg-[#0A0C10] sm:bg-transparent">
-      {/* Dim Backdrop Overlay - Hidden on mobile to feel like a separate page */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#0A0C10]">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        className="hidden sm:block absolute inset-0 bg-black/85 backdrop-blur-xl"
-        onClick={handleCloseModal}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
-        className="relative w-full h-full sm:h-auto sm:max-h-[95vh] max-w-6xl bg-[#0A0C10] sm:glass-strong sm:border sm:border-white/20 sm:rounded-[28px] overflow-hidden sm:shadow-[0_30px_90px_rgba(0,0,0,0.9)] flex flex-col z-10 text-white"
+        className="relative w-full h-full bg-[#0A0C10] overflow-y-auto overflow-x-hidden flex flex-col z-10 text-white"
       >
         {/* Top Edge Specular Highlight - Desktop Only */}
         <div className="hidden sm:block absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-100 via-white to-transparent pointer-events-none blur-[0.2px] z-30" />
 
-        {/* Floating Close/Back Button (when not in full video player mode) */}
-        {!isPlaying && (
-          <button
-            onClick={handleCloseModal}
-            className="absolute top-4 left-4 sm:left-auto sm:right-4 z-40 p-2.5 rounded-full bg-black/50 sm:glass-subtle hover:bg-black/70 sm:hover:bg-white/20 text-white transition-all cursor-pointer shadow-lg backdrop-blur-md"
-            title="Back / Close"
-          >
-            <ArrowLeft className="sm:hidden block w-5 h-5" />
-            <X className="hidden sm:block w-5 h-5" />
-          </button>
-        )}
+        {/* Floating Close/Back Button */}
+        <button
+          onClick={handleCloseModal}
+          className="absolute top-4 left-4 z-40 p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all cursor-pointer shadow-lg backdrop-blur-md"
+          title="Back / Close"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
 
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] gap-3">
@@ -369,128 +375,58 @@ export function WatchModal({
             <p className="text-white/60 text-sm font-medium animate-pulse">Loading show details...</p>
           </div>
         ) : show ? (
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-hide">
-            {/* Top Video Stage / Hero Section */}
-            <AnimatePresence mode="wait">
-              {isPlaying ? (
-              <motion.div 
-                key="player"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
-                className="bg-black relative z-20 overflow-hidden"
-              >
-                {/* Ambient Glow Background */}
-                <div 
-                  className="absolute -inset-10 bg-cover bg-center opacity-30 blur-[60px] md:blur-[100px] animate-pulse pointer-events-none"
-                  style={{ 
-                    backgroundImage: `url(${backdrop || poster})`,
-                    animationDuration: '8s'
-                  }}
-                />
-                
-                {/* Cinema View Player Stage */}
-                <div id="player-stage-container" className="w-full max-w-5xl mx-auto p-2 sm:p-4 md:p-6 relative z-10 flex flex-col justify-center">
-                  
-                  {/* Floating Action Bar / Top Overlay */}
-                  <div className="fullscreen-overlay-bar mb-3 flex items-center justify-between gap-2 px-1">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleStopPlayback}
-                        className="px-3 py-1.5 rounded-xl glass-subtle hover:glass-medium text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-                        title="Back to Details"
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
-                        <span className="hidden sm:inline">Back to Details</span>
-                      </button>
-
-                      <GlassPill variant="accent" size="xs">
-                        {isMovie ? 'MOVIE' : `S${selectedSeason}:E${selectedEpisode}`}
-                      </GlassPill>
-
-                      <span className="text-xs text-white/90 font-bold truncate max-w-[140px] sm:max-w-[240px] md:max-w-md drop-shadow">
-                        {show.title} {currentEpisodeData?.name && <span className="font-normal text-white/70"> - "{currentEpisodeData.name}"</span>}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {/* Mobile Landscape Rotation trigger */}
-                      <button
-                        onClick={enterFullscreenAndLandscape}
-                        className="p-2 rounded-xl glass-subtle hover:glass-medium text-white/80 hover:text-white transition-all cursor-pointer flex sm:hidden items-center justify-center shadow-md"
-                        title="Rotate to Landscape"
-                      >
-                        <RotateCw className="w-3.5 h-3.5 sm:w-[15px] sm:h-[15px]" />
-                      </button>
-
-
-
-                      <button
-                        onClick={handleCloseModal}
-                        className="p-1.5 rounded-xl glass-subtle hover:bg-white/20 text-white/80 hover:text-white transition-all cursor-pointer shadow-md"
-                        title="Close Modal"
-                      >
-                        <X className="w-4 h-4 sm:w-[17px] sm:h-[17px]" />
-                      </button>
-                    </div>
+          <>
+            {/* Fullscreen Video Player */}
+            <AnimatePresence>
+              {isPlaying && (
+                <motion.div 
+                  key="fullscreen-player"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="fixed inset-0 z-[100] bg-black flex flex-col"
+                >
+                  <div className="absolute top-4 left-4 z-50">
+                    <button
+                      onClick={handleStopPlayback}
+                      className="p-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all cursor-pointer backdrop-blur-md"
+                      title="Exit Player"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
                   </div>
-
-                  {/* Main Video Embed */}
-                  <CineSrcPlayer
-                    tmdbId={tmdbId}
-                    type={isMovie ? 'movie' : 'tv'}
-                    season={isMovie ? undefined : selectedSeason}
-                    episode={isMovie ? undefined : selectedEpisode}
-                    title={show.title}
-                    poster={poster}
-                    backdrop={backdrop}
-                    startAt={resumeStartAt}
-                    episodeTitle={currentEpisodeData?.name}
-                    hasNextEpisode={hasNextEpisode}
-                    onNextEpisode={handleNextEpisode}
-                    className="shadow-[0_15px_50px_rgba(0,0,0,0.8)]"
-                  />
-
-                  {/* TV Episode Navigator */}
-                  {!isMovie && (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-white/60">Episode Navigation:</span>
-                        <button
-                          onClick={handlePrevEpisode}
-                          disabled={!hasPrevEpisode}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
-                            hasPrevEpisode
-                              ? 'glass-subtle hover:glass-medium text-white cursor-pointer'
-                              : 'opacity-40 text-white/40 cursor-not-allowed'
-                          }`}
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Prev Episode
-                        </button>
-
-                        <button
-                          onClick={handleNextEpisode}
-                          disabled={!hasNextEpisode}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
-                            hasNextEpisode
-                              ? 'glass-button-primary text-white cursor-pointer shadow-md'
-                              : 'opacity-40 text-white/40 cursor-not-allowed'
-                          }`}
-                        >
-                          Next Episode <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
+                  <div className="w-full h-full relative flex flex-col">
+                    <CineSrcPlayer
+                      tmdbId={tmdbId}
+                      type={isMovie ? 'movie' : 'tv'}
+                      season={isMovie ? undefined : selectedSeason}
+                      episode={isMovie ? undefined : selectedEpisode}
+                      title={show.title}
+                      poster={poster}
+                      backdrop={backdrop}
+                      startAt={resumeStartAt}
+                      episodeTitle={currentEpisodeData?.name}
+                      hasNextEpisode={hasNextEpisode}
+                      onNextEpisode={handleNextEpisode}
+                      className="w-full h-full flex-1"
+                    />
+                    {!isMovie && (
+                      <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between pointer-events-none opacity-0 hover:opacity-100 transition-opacity z-50">
+                        <div className="pointer-events-auto flex items-center gap-4 bg-black/80 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10">
+                          <button onClick={handlePrevEpisode} disabled={!hasPrevEpisode} className="p-2 text-white disabled:opacity-40 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                          <span className="text-white text-sm font-semibold tracking-wide">S{selectedSeason}:E{selectedEpisode}</span>
+                          <button onClick={handleNextEpisode} disabled={!hasNextEpisode} className="p-2 text-white disabled:opacity-40 hover:bg-white/10 rounded-full transition-colors"><ChevronRight className="w-5 h-5" /></button>
+                        </div>
                       </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                      <span className="text-xs text-white/50">
-                        Season {selectedSeason} ({seasonData?.episodes?.length || 0} Episodes)
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ) : (
-              /* Backdrop Hero Banner with Pull-Down Zoom & Stretch */
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-hide">
+              {/* Backdrop Hero Banner with Pull-Down Zoom & Stretch */}
               <motion.div 
                 key="hero"
                 initial={{ opacity: 0 }}
@@ -510,14 +446,26 @@ export function WatchModal({
                     WebkitTransformOrigin: '50% 0%',
                   }}
                 >
-                  <img
-                    src={backdrop}
-                    alt={show.title}
-                    decoding="sync"
-                    loading="eager"
-                    fetchPriority="high"
-                    className="w-full h-full object-cover object-center filter brightness-100 will-change-transform"
-                  />
+                  {trailerUrl && !isPlaying ? (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                      <iframe 
+                        className="absolute top-1/2 left-1/2 w-[300vw] h-[300vh] sm:w-[150vw] sm:h-[150vh] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 opacity-70"
+                        src={trailerUrl}
+                        allow="autoplay; encrypted-media" 
+                        allowFullScreen
+                        style={{ pointerEvents: 'none' }}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={backdrop}
+                      alt={show.title}
+                      decoding="sync"
+                      loading="eager"
+                      fetchPriority="high"
+                      className="w-full h-full object-cover object-center filter brightness-100 will-change-transform"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0E1117] via-[#0E1117]/60 via-30% to-transparent w-full md:w-2/3" />
                 </motion.div>
@@ -579,9 +527,7 @@ export function WatchModal({
                   </div>
                 </motion.div>
               </motion.div>
-            )}
-            </AnimatePresence>
-
+            
             {/* Content & Metadata Section */}
             <div className="p-6 sm:p-8 space-y-8">
               {/* TV Episode & Season Selector */}
@@ -840,6 +786,7 @@ export function WatchModal({
             
             <Footer />
           </div>
+          </>
         ) : null}
       </motion.div>
     </div>

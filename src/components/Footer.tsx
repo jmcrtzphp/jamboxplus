@@ -48,6 +48,9 @@ export const Footer: React.FC<{ onOpenCookies?: () => void, onOpenPrivacy?: () =
             <p className="text-white/50 text-sm leading-relaxed mb-6">
               Premium cinematic entertainment. Stream the latest blockbuster movies and exclusive original series in stunning Ultra HD.
             </p>
+            <p className="text-white/30 text-xs leading-relaxed mt-4">
+              This product uses the TMDB API but is not endorsed or certified by TMDB.
+            </p>
           </div>
           
           <div>

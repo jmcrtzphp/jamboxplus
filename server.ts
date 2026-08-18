@@ -362,6 +362,7 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
       posterPath: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : undefined,
       airDate: s.air_date
     })),
+    videos: item.videos?.results || []
   };
 }
 

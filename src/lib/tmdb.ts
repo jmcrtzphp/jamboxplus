@@ -70,6 +70,7 @@ export interface Show {
   seasonCount?: number;
   episodeCount?: number;
   seasons?: SeasonInfo[];
+  videos?: any[];
 }
 
 export interface FilterParams {
@@ -115,7 +116,8 @@ function normalizeShow(data: any): Show {
     streamingOptions: data.streamingOptions,
     seasonCount: data.seasonCount,
     episodeCount: data.episodeCount,
-    seasons: data.seasons
+    seasons: data.seasons,
+    videos: data.videos
   };
 }
 
