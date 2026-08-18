@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Info, Plus, Check, Star, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Info, Plus, Check, Star, Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
 import { AnimeMedia } from '../types/anime';
 import { getAnimeDisplayTitle, getAnimeBackdrop, getAnimePoster } from '../api/anilist';
 import { GlassButton } from '../../components/liquid-glass';
+import { usePullDownZoom } from '../../hooks/usePullDownZoom';
+import { useElasticOverscroll } from '../../hooks/useElasticOverscroll';
 
 interface AnimeHeroProps {
   featuredAnime: AnimeMedia[];
@@ -20,186 +22,172 @@ export const AnimeHero = React.memo(function AnimeHero({
   isFavorite,
   onToggleFavorite,
 }: AnimeHeroProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-
+  const [activeIndex, setActiveIndex] = useState(0);
   const animeList = featuredAnime.slice(0, 6);
 
-  // Auto-advance banner every 7 seconds if not hovered
+  // Auto-advance banner every 6 seconds
   useEffect(() => {
-    if (animeList.length <= 1 || isHovered) return;
+    if (animeList.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % animeList.length);
-    }, 7000);
+      setActiveIndex((current) => (current + 1) % animeList.length);
+    }, 6000);
     return () => clearInterval(interval);
-  }, [animeList.length, isHovered]);
+  }, [animeList.length, activeIndex]);
+
+  const { dragX, scale: swipeScale, handleDragEnd } = useElasticOverscroll({
+    activeIndex,
+    itemCount: animeList.length,
+    onSwipeLeft: () => setActiveIndex((i) => (i + 1) % animeList.length),
+    onSwipeRight: () => setActiveIndex((i) => (i - 1 + animeList.length) % animeList.length),
+  });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { imageScale, contentY } = usePullDownZoom(containerRef);
 
   if (animeList.length === 0) return null;
 
-  const currentAnime = animeList[currentIndex];
+  const currentAnime = animeList[activeIndex];
   const title = getAnimeDisplayTitle(currentAnime);
-  const backdrop = getAnimeBackdrop(currentAnime);
-  const poster = getAnimePoster(currentAnime);
-  const score = currentAnime.averageScore ? (currentAnime.averageScore / 10).toFixed(1) : null;
+  const rawScore = currentAnime.averageScore || currentAnime.meanScore;
+  const rating = rawScore ? (rawScore > 10 ? (rawScore / 10).toFixed(1) : rawScore.toFixed(1)) : null;
   const isFav = isFavorite ? isFavorite(currentAnime.id) : false;
 
   const cleanDescription = currentAnime.description
-    ? currentAnime.description.replace(/<[^>]*>?/gm, '').slice(0, 220) + '...'
-    : 'Stream the full anime series in HD on JamBox+ with CineSrc playback.';
+    ? currentAnime.description.replace(/<[^>]*>?/gm, '')
+    : 'Stream the full anime series in HD on JamBox+ with fast, ad-free MegaPlay streaming.';
 
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="relative w-full h-[60vh] sm:h-[68vh] md:h-[78vh] overflow-hidden bg-[#0A0C10] select-none"
+      ref={containerRef}
+      style={{ touchAction: 'pan-x pan-y', WebkitUserSelect: 'none' }}
+      className="relative h-[92vh] md:h-[90vh] w-full overflow-hidden gpu-layer group bg-black select-none"
     >
-      {/* Background Backdrop Layer with Crossfade */}
-      <AnimatePresence mode="wait">
+      {/* 1. Sticky Hero Image Layer */}
+      <motion.div
+        className="sticky top-0 inset-x-0 w-full h-full pointer-events-none will-change-transform"
+        style={{
+          scale: imageScale,
+          transformOrigin: '50% 0%',
+          WebkitTransformOrigin: '50% 0%',
+        }}
+      >
         <motion.div
-          key={`backdrop-${currentAnime.id}`}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="absolute inset-0 w-full h-full"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={handleDragEnd}
+          style={{ x: dragX, scale: swipeScale, touchAction: 'pan-x pan-y' }}
+          className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto"
         >
-          <img
-            src={backdrop}
-            alt={title}
-            className="w-full h-full object-cover object-center filter brightness-90"
-            referrerPolicy="no-referrer"
-          />
+          {/* Background Posters with cross-fade */}
+          {animeList.map((anime, idx) => {
+            const bg = getAnimeBackdrop(anime) || getAnimePoster(anime);
+            return (
+              <img
+                key={`${anime.id}-${idx}`}
+                src={bg}
+                alt={getAnimeDisplayTitle(anime)}
+                decoding={idx === activeIndex ? 'sync' : 'async'}
+                loading={idx === activeIndex ? 'eager' : 'lazy'}
+                fetchPriority={idx === activeIndex ? 'high' : 'auto'}
+                referrerPolicy="no-referrer"
+                className={`absolute inset-0 w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform transition-opacity duration-1000 ease-in-out ${
+                  idx === activeIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'
+                }`}
+              />
+            );
+          })}
+
+          {/* Atmospheric Liquid Glass Depth Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent z-0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0" />
         </motion.div>
-      </AnimatePresence>
+      </motion.div>
 
-      {/* Cinematic Vignettes & Gradient Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 to-transparent z-10" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/70 to-transparent z-10" />
-      <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 z-10" />
-
-      {/* Content Container */}
-      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 flex flex-col justify-end pb-12 sm:pb-16 md:pb-20">
-        <div className="max-w-2xl sm:max-w-3xl space-y-4 sm:space-y-5">
-          {/* Badges & Meta Row */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider shadow-sm">
-              <Sparkles size={12} />
-              Anime Featured
-            </span>
-
-            {score && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-semibold text-amber-300">
-                <Star size={11} className="fill-amber-300" />
-                {score} Rating
-              </span>
-            )}
-
-            {currentAnime.format && (
-              <span className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium uppercase">
-                {currentAnime.format}
-              </span>
-            )}
-
-            {currentAnime.episodes && (
-              <span className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/70 text-xs font-medium">
-                {currentAnime.episodes} Episodes
-              </span>
-            )}
-          </div>
-
-          {/* Title */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] drop-shadow-2xl">
-            {title}
-          </h1>
-
-          {/* Genres */}
-          {currentAnime.genres && (
-            <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-white/70 font-medium">
-              {currentAnime.genres.slice(0, 4).map((g, idx) => (
-                <span key={g} className="flex items-center gap-2">
-                  {idx > 0 && <span className="text-white/30">•</span>}
-                  <span>{g}</span>
-                </span>
-              ))}
+      {/* 2. Parallax Content Overlay Layer */}
+      <motion.div
+        style={{ y: contentY }}
+        className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-0 right-0 px-6 sm:px-0 sm:left-6 md:left-8 lg:left-12 xl:left-16 sm:right-auto flex flex-col items-center text-center sm:items-start sm:text-left max-w-2xl z-10 pb-2 sm:pb-0 pointer-events-none will-change-transform"
+      >
+        <div className="flex items-center gap-2 mb-3.5 pointer-events-auto">
+          {rating && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-subtle text-yellow-300 text-xs font-bold shadow-md">
+              <Star size={13} className="fill-yellow-400 text-yellow-400" />
+              <span>{rating} Rating</span>
             </div>
           )}
-
-          {/* Synopsis */}
-          <p className="text-xs sm:text-sm md:text-base text-white/70 leading-relaxed line-clamp-3 max-w-xl sm:max-w-2xl drop-shadow">
-            {cleanDescription}
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              onClick={() => onPlay(currentAnime, 1)}
-              className="flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm sm:text-base shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-            >
-              <Play size={18} className="fill-black" />
-              <span>Watch Ep 1</span>
-            </button>
-
-            <button
-              onClick={() => onOpenDetails(currentAnime)}
-              className="flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/15 text-white font-semibold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-            >
-              <Info size={18} />
-              <span>Details</span>
-            </button>
-
-            {onToggleFavorite && (
-              <button
-                onClick={(e) => onToggleFavorite(e, currentAnime.id)}
-                className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 cursor-pointer ${
-                  isFav
-                    ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/30'
-                    : 'bg-black/50 text-white/80 border-white/20 hover:text-white hover:bg-black/70 hover:scale-105'
-                }`}
-                title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                {isFav ? <Check size={20} className="stroke-[3]" /> : <Plus size={20} />}
-              </button>
-            )}
-          </div>
+          {currentAnime.format && (
+            <span className="px-2.5 py-1 rounded-full glass-subtle text-white/80 text-xs font-bold uppercase tracking-wider">
+              {currentAnime.format === 'TV_SHORT' ? 'TV' : currentAnime.format}
+            </span>
+          )}
+          {currentAnime.status === 'RELEASING' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Airing
+            </span>
+          )}
         </div>
-      </div>
 
-      {/* Carousel Controls (Left/Right Arrows & Indicators) */}
-      {animeList.length > 1 && (
-        <>
-          <button
-            onClick={() => setCurrentIndex((prev) => (prev === 0 ? animeList.length - 1 : prev - 1))}
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/40 hover:bg-black/80 backdrop-blur-md border border-white/15 text-white items-center justify-center hover:scale-110 active:scale-90 transition-all cursor-pointer"
-            aria-label="Previous Featured Anime"
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg leading-tight transition-all duration-500">
+          {title}
+        </h1>
+
+        <p className="text-white/80 text-sm md:text-base line-clamp-3 mb-6 font-normal drop-shadow leading-relaxed max-w-xl transition-all duration-500 pointer-events-auto">
+          {cleanDescription}
+        </p>
+
+        {/* Hero Interactive Physical Buttons */}
+        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 pointer-events-auto">
+          <GlassButton
+            variant="primary"
+            size="md"
+            onClick={() => onOpenDetails(currentAnime)}
+            className="cursor-pointer"
           >
-            <ChevronLeft size={22} />
-          </button>
+            <Play size={17} className="fill-white" /> Watch Options
+          </GlassButton>
 
-          <button
-            onClick={() => setCurrentIndex((prev) => (prev + 1) % animeList.length)}
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/40 hover:bg-black/80 backdrop-blur-md border border-white/15 text-white items-center justify-center hover:scale-110 active:scale-90 transition-all cursor-pointer"
-            aria-label="Next Featured Anime"
+          {onToggleFavorite && (
+            <GlassButton
+              variant="secondary"
+              size="md"
+              onClick={(e) => onToggleFavorite(e, currentAnime.id)}
+              className="cursor-pointer"
+            >
+              {isFav ? <Check size={17} className="text-green-400" /> : <Plus size={17} />}
+              {isFav ? 'Saved' : 'Favorites'}
+            </GlassButton>
+          )}
+
+          <GlassButton
+            variant="secondary"
+            size="md"
+            onClick={() => onOpenDetails(currentAnime)}
+            className="cursor-pointer !px-3"
+            aria-label="More Info"
           >
-            <ChevronRight size={22} />
-          </button>
+            <Info size={18} className="text-white/80" />
+          </GlassButton>
+        </div>
+      </motion.div>
 
-          {/* Dots Indicator */}
-          <div className="absolute right-4 sm:right-8 md:right-16 bottom-8 z-30 flex items-center gap-2">
-            {animeList.map((item, idx) => (
-              <button
-                key={item.id}
-                onClick={() => setCurrentIndex(idx)}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  idx === currentIndex
-                    ? 'w-7 bg-amber-500'
-                    : 'w-2 bg-white/30 hover:bg-white/60'
-                }`}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      {/* 3. Carousel Indicators */}
+      <motion.div
+        style={{ y: contentY }}
+        className="absolute bottom-6 md:bottom-12 left-0 right-0 sm:right-auto flex justify-center sm:justify-start sm:left-6 md:left-8 lg:left-12 xl:left-16 items-center gap-2 z-20 pointer-events-none will-change-transform"
+      >
+        {animeList.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveIndex(idx)}
+            className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer pointer-events-auto ${
+              idx === activeIndex ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
+      </motion.div>
     </div>
   );
 });

@@ -184,7 +184,7 @@ export function Movies({ onBack, onNavigate, onOpenCookies, onOpenPrivacy, onOpe
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="w-full pt-16 sm:pt-20"
+            className="w-full"
           >
             <AnimeHome
               favorites={new Set(favorites.filter(f => f.startsWith('anime-')).map(f => parseInt(f.replace('anime-', ''), 10)))}

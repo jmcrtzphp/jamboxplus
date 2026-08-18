@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useRef } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { AnimeMedia } from '../types/anime';
 import { AnimeCard } from './AnimeCard';
 import { AnimeRowSkeleton } from './AnimeSkeleton';
@@ -29,23 +29,16 @@ export const AnimeRow = React.memo(function AnimeRow({
   isFavorite,
   onToggleFavorite,
 }: AnimeRowProps) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const checkScroll = () => {
-    if (rowRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setCanScrollLeft(scrollLeft > 20);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 20);
-    }
-  };
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (rowRef.current) {
-      const { clientWidth } = rowRef.current;
-      const scrollAmount = direction === 'left' ? -clientWidth * 0.75 : clientWidth * 0.75;
-      rowRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  const scroll = (dir: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current;
+      const scrollAmount = clientWidth * 0.75;
+      scrollRef.current.scrollTo({
+        left: dir === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -58,68 +51,57 @@ export const AnimeRow = React.memo(function AnimeRow({
   }
 
   return (
-    <div className="my-8 sm:my-10 relative group/row">
+    <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
       {/* Row Header */}
-      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 flex items-center justify-between mb-3.5 sm:mb-4.5">
-        <div>
-          <div className="flex items-center gap-2">
-            {icon}
-            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">
-              {title}
-            </h2>
-          </div>
-          {subtitle && (
-            <p className="text-xs sm:text-sm text-white/50 mt-0.5">{subtitle}</p>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className="w-8 h-8 rounded-xl glass-subtle flex items-center justify-center text-amber-400">
+              {icon}
+            </div>
           )}
+          <div>
+            {subtitle && (
+              <div className="text-[10px] text-white/50 uppercase font-bold tracking-wider mb-0.5">
+                {subtitle}
+              </div>
+            )}
+            <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
+              {title}
+            </h3>
+          </div>
         </div>
 
         {onSeeAll && (
           <button
             onClick={onSeeAll}
-            className="text-xs sm:text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-xs font-semibold text-white/60 hover:text-white flex items-center gap-1 group/btn glass-subtle px-3 py-1 rounded-full cursor-pointer transition-colors"
           >
-            <span>Explore All</span>
-            <ChevronRight size={16} />
+            See All <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
           </button>
         )}
       </div>
 
-      {/* Relative Carousel Container */}
+      {/* Row Horizontal Shelf */}
       <div className="relative">
         {/* Left Scroll Button */}
-        {canScrollLeft && (
-          <button
-            onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/15 text-white items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft size={22} />
-          </button>
-        )}
-
-        {/* Right Scroll Button */}
-        {canScrollRight && (
-          <button
-            onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/15 text-white items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
-            aria-label="Scroll right"
-          >
-            <ChevronRight size={22} />
-          </button>
-        )}
+        <button
+          onClick={() => scroll('left')}
+          className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-r-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+          aria-label="Scroll left"
+        >
+          <ChevronRight size={24} className="rotate-180 text-white" />
+        </button>
 
         {/* Scrollable Track */}
         <div
-          ref={rowRef}
-          onScroll={checkScroll}
-          className="flex gap-3 sm:gap-4.5 overflow-x-auto no-scrollbar scroll-smooth px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pb-2"
-          style={{ scrollSnapType: 'x mandatory' }}
+          ref={scrollRef}
+          className="flex gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide snap-x py-4 -my-4 pl-1 pr-12"
         >
-          {animeList.map((anime) => (
+          {animeList.slice(0, 15).map((anime, index) => (
             <div
-              key={anime.id}
-              className="w-[140px] sm:w-[165px] md:w-[195px] lg:w-[225px] xl:w-[245px] flex-shrink-0"
-              style={{ scrollSnapAlign: 'start' }}
+              key={`${anime.id}-${index}`}
+              className="w-[140px] sm:w-[160px] md:w-[190px] lg:w-[220px] xl:w-[240px] flex-shrink-0 snap-start"
             >
               <AnimeCard
                 anime={anime}
@@ -131,6 +113,15 @@ export const AnimeRow = React.memo(function AnimeRow({
             </div>
           ))}
         </div>
+
+        {/* Right Scroll Button */}
+        <button
+          onClick={() => scroll('right')}
+          className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-l-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={24} className="text-white" />
+        </button>
       </div>
     </div>
   );
