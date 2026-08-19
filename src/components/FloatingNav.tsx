@@ -3,6 +3,7 @@ import { Play, Search, X, Film, Tv, Radio, Bookmark, Star, Clock, Trash2, ArrowR
 import { Logo, JamBoxText } from './Logo';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchSearchSuggestions, SearchSuggestion } from '../lib/tmdb';
+import { LiquidGlass } from './LiquidGlass';
 
 
 const CustomFilmIcon = ({ size, className }: any) => (
@@ -31,57 +32,6 @@ const CustomSearchIcon = ({ size, className }: any) => (
 
 
 
-const isLiquidSupported = (() => {
-  if (typeof window === 'undefined') return false;
-  const ua = navigator.userAgent;
-  const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
-  const isFirefox = /Firefox/.test(ua);
-  if (isSafari || isFirefox) return false;
-  if (!CSS.supports("backdrop-filter", "url(#lg)") && !CSS.supports("-webkit-backdrop-filter", "url(#lg)")) return false;
-  try {
-    const c = document.createElement("canvas");
-    c.width = c.height = 4;
-    c.getContext("2d")?.getImageData(0, 0, 1, 1);
-    return true;
-  } catch (_) {
-    return false;
-  }
-})();
-
-function makeMap(w: number, h: number, radius: number, border: number, mapBlur: number) {
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-
-  const gx = ctx.createLinearGradient(0, 0, w, 0);
-  gx.addColorStop(0, "rgb(0,0,0)");
-  gx.addColorStop(1, "rgb(255,0,0)");
-  ctx.fillStyle = gx;
-  ctx.fillRect(0, 0, w, h);
-
-  const gy = ctx.createLinearGradient(0, 0, 0, h);
-  gy.addColorStop(0, "rgb(0,0,0)");
-  gy.addColorStop(1, "rgb(0,0,255)");
-  ctx.globalCompositeOperation = "difference";
-  ctx.fillStyle = gy;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.globalCompositeOperation = "source-over";
-  const inset = border * Math.min(w, h);
-  ctx.filter = `blur(${mapBlur}px)`;
-  ctx.fillStyle = "rgba(128,128,128,0.93)";
-  ctx.beginPath();
-  if (ctx.roundRect) {
-    ctx.roundRect(inset, inset, w - inset * 2, h - inset * 2, Math.max(radius - inset, 2));
-  } else {
-    ctx.rect(inset, inset, w - inset * 2, h - inset * 2);
-  }
-  ctx.fill();
-  ctx.filter = "none";
-  return canvas.toDataURL();
-}
 
 export interface FloatingNavProps {
   onBack: () => void;
@@ -117,8 +67,18 @@ export function FloatingNav({
 
   // Bottom Nav Reference
   const [bottomNavSize, setBottomNavSize] = useState({ w: 0, h: 0 });
-  const [bottomMapUrl, setBottomMapUrl] = useState('');
   const bottomNavRef = useRef<HTMLDivElement>(null);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrolledDown(currentScrollY > lastScrollY && currentScrollY > 50);
+      lastScrollY = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Suggestions & Recent Searches
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -209,40 +169,6 @@ export function FloatingNav({
     };
   }, [searchQuery]);
 
-  useEffect(() => {
-    if (!pillRef.current) return;
-    let timer: number | null = null;
-    const ro = new ResizeObserver((entries) => {
-      if (timer) clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        for (let entry of entries) {
-          const rect = entry.target.getBoundingClientRect();
-          const w = Math.round(rect.width);
-          const h = Math.round(rect.height);
-          if (entry.target === pillRef.current) {
-            setPillSize({ w, h });
-            if (w > 0 && h > 0 && isLiquidSupported) {
-               setMapUrl(makeMap(w, h, Math.min(w, h) / 2, 0.07, 12));
-            }
-          } else if (entry.target === bottomNavRef.current) {
-            setBottomNavSize({ w, h });
-            if (w > 0 && h > 0 && isLiquidSupported) {
-               setBottomMapUrl(makeMap(w, h, Math.min(w, h) / 2, 0.07, 12));
-            }
-          }
-        }
-      }, 120);
-    });
-    
-    if (pillRef.current) ro.observe(pillRef.current);
-    if (bottomNavRef.current) ro.observe(bottomNavRef.current);
-    
-    return () => {
-      if (timer) clearTimeout(timer);
-      ro.disconnect();
-    };
-  }, []);
-
   const links: Array<{ id: string, label: string, icon: any, mobileIcon?: any, mobileLabel?: string, action?: () => void }> = [
     { id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
     { id: 'tv', label: 'TV Shows', icon: Tv, mobileIcon: CustomTvIcon },
@@ -251,60 +177,7 @@ export function FloatingNav({
 
   return (
     <>
-      {/* Hidden SVG container for dynamic refractive filter */}
-      <svg aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', left: '-9999px' }}>
-        <defs>
-          {isLiquidSupported && mapUrl && (
-            <filter id="liquid-glass" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-              <feImage
-                x="0"
-                y="0"
-                width={pillSize.w}
-                height={pillSize.h}
-                preserveAspectRatio="none"
-                result="map"
-                href={mapUrl}
-              />
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-112" xChannelSelector="R" yChannelSelector="B" result="d0" />
-              <feColorMatrix in="d0" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="c0" />
-              
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-106" xChannelSelector="R" yChannelSelector="B" result="d1" />
-              <feColorMatrix in="d1" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="c1" />
-              
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-100" xChannelSelector="R" yChannelSelector="B" result="d2" />
-              <feColorMatrix in="d2" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="c2" />
-              
-              <feBlend in="c0" in2="c1" mode="screen" result="c01" />
-              <feBlend in="c01" in2="c2" mode="screen" />
-            </filter>
-          )}
-          
-          {isLiquidSupported && bottomMapUrl && (
-            <filter id="liquid-glass-bottom" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-              <feImage
-                x="0"
-                y="0"
-                width={bottomNavSize.w}
-                height={bottomNavSize.h}
-                preserveAspectRatio="none"
-                result="map"
-                href={bottomMapUrl}
-              />
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-112" xChannelSelector="R" yChannelSelector="B" result="d0" />
-              <feColorMatrix in="d0" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="c0" />
-              
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-106" xChannelSelector="R" yChannelSelector="B" result="d1" />
-              <feColorMatrix in="d1" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="c1" />
-              
-              <feDisplacementMap in="SourceGraphic" in2="map" scale="-100" xChannelSelector="R" yChannelSelector="B" result="d2" />
-              <feColorMatrix in="d2" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="c2" />
-              
-              <feBlend in="c0" in2="c1" mode="screen" result="c01" />
-              <feBlend in="c01" in2="c2" mode="screen" />
-            </filter>
-          )}
-        </defs>
-      </svg>
+      
 
       {/* Mobile Top Floating Elements */}
       <div className="sm:hidden fixed top-0 left-0 w-full h-20 bg-gradient-to-b from-black/80 to-transparent z-40 pointer-events-none" />
@@ -316,19 +189,17 @@ export function FloatingNav({
       <div className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
         {/* Floating Glass Pill Container */}
         <div className="relative flex flex-col items-center">
-          <div 
-            ref={pillRef}
+          <LiquidGlass 
+            scale={-112}
+            chroma={6}
+            border={0.07}
+            mapBlur={12}
+            blur={3}
+            saturate={1.5}
             className="pointer-events-auto inline-flex items-center gap-1 md:gap-2 lg:gap-4 rounded-full p-1.5 transition-opacity duration-[260ms] ease-out w-auto max-w-[95%] lg:max-w-4xl"
             style={{
               background: 'rgba(0, 0, 0, 0.4)',
-              boxShadow: 'inset 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.2)',
-              ...(isLiquidSupported && mapUrl ? {
-                backdropFilter: 'url(#liquid-glass) blur(3px) saturate(1.5)',
-                WebkitBackdropFilter: 'url(#liquid-glass) blur(3px) saturate(1.5)',
-              } : {
-                backdropFilter: 'blur(16px) saturate(1.5)',
-                WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
-              })
+              boxShadow: 'inset 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.2)'
             }}
           >
             {/* Logo */}
@@ -470,7 +341,7 @@ export function FloatingNav({
                 <Search size={18} />
               </button>
             </div>
-          </div>
+          </LiquidGlass>
 
           {/* Desktop Search Suggestions & Recent Searches Dropdown */}
           <AnimatePresence>
@@ -590,26 +461,26 @@ export function FloatingNav({
             )}
           </AnimatePresence>
         </div>
-      </div>
+        </div>
 
       {/* Mobile Floating Bottom Nav */}
       <div className="sm:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <motion.div 
-          ref={bottomNavRef}
-          layout
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="pointer-events-auto flex items-center w-full max-w-sm rounded-full p-1.5 transition-opacity duration-[260ms] ease-out min-h-[58px]"
+        <LiquidGlass
+          scale={-112}
+          chroma={6}
+          border={0.07}
+          mapBlur={12}
+          blur={3}
+          saturate={1.5}
+          className="pointer-events-auto rounded-full overflow-hidden transition-all duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center"
           style={{
-            background: 'rgba(0, 0, 0, 0.5)',
-            boxShadow: 'inset 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.4)',
-            ...(isLiquidSupported && bottomMapUrl ? {
-              backdropFilter: 'url(#liquid-glass-bottom) blur(3px) saturate(1.5)',
-              WebkitBackdropFilter: 'url(#liquid-glass-bottom) blur(3px) saturate(1.5)',
-            } : {
-              backdropFilter: 'blur(18px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
-            })
+            width: isScrolledDown ? '60%' : '100%',
+            maxWidth: isScrolledDown ? '240px' : '400px',
+            padding: isScrolledDown ? '0.4rem' : '0.6rem',
+            background: 'rgba(0, 0, 0, 0.4)',
+            boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5)'
           }}
+          fallbackBlur={20}
         >
           <AnimatePresence mode="wait">
             {activeTab === 'search' ? (
@@ -626,7 +497,7 @@ export function FloatingNav({
                   ref={mobileSearchInputRef}
                   autoFocus
                   type="text"
-                  placeholder="Search movies, TV shows..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -634,15 +505,6 @@ export function FloatingNav({
                   }}
                   className="flex-1 bg-transparent text-sm text-white placeholder-white/40 outline-none font-medium py-1.5 min-w-0"
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="p-1.5 text-white/50 hover:text-white rounded-full transition-colors cursor-pointer shrink-0"
-                    aria-label="Clear search text"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
                 <button
                   onClick={() => {
                     setSearchQuery('');
@@ -665,15 +527,14 @@ export function FloatingNav({
               >
                 {[
                   { id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
-                  { id: 'tv', label: 'TV Shows', icon: Tv, mobileIcon: CustomTvIcon },
-                                    { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites', mobileIcon: CustomBookmarkIcon },
+                  { id: 'tv', label: 'TV', icon: Tv, mobileIcon: CustomTvIcon },
+                  { id: 'favorites', label: 'Favs', icon: Bookmark, mobileIcon: CustomBookmarkIcon },
                   { id: 'search', label: 'Search', icon: Search, mobileIcon: CustomSearchIcon }
                 ].map((link) => {
                   const isActive = activeTab === link.id;
                   const Icon = link.icon;
                   return (
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
+                    <button
                       key={link.id}
                       onClick={() => {
                         if (link.id === 'search') {
@@ -684,28 +545,39 @@ export function FloatingNav({
                           setActiveTab(link.id);
                         }
                       }}
-                      className="relative flex flex-col items-center justify-center w-14 h-13 rounded-full text-white/70 hover:text-white transition-colors duration-200 outline-none cursor-pointer"
+                      className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full text-white/70 hover:text-white transition-colors duration-200 outline-none cursor-pointer tap-highlight-transparent"
                       style={{ color: isActive ? '#fff' : 'rgba(255,255,255,0.7)' }}
                     >
-                      <div 
-                         className={`absolute inset-0 bg-amber-500 rounded-full transition-opacity duration-[260ms] ease-out ${isActive ? 'opacity-15' : 'opacity-0'}`}
-                         style={{ zIndex: -1 }}
-                      />
-                      {link.mobileIcon ? (
-                        <link.mobileIcon size={24} className="mb-0 text-current" />
-                      ) : (
-                        <>
-                          <Icon size={19} className="mb-0.5" />
-                          <span className="text-[10px] font-medium leading-none">{link.mobileLabel || link.label}</span>
-                        </>
+                      {isActive && (
+                        <motion.div
+                          layoutId="active-capsule-mobile"
+                          className="absolute inset-0 bg-amber-500/80 rounded-full"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          style={{ boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3)' }}
+                        />
                       )}
-                    </motion.button>
+                      
+                      {link.mobileIcon ? (
+                        <link.mobileIcon size={isScrolledDown ? 20 : 22} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-white' : 'text-white/70'}`} />
+                      ) : (
+                        <Icon size={isScrolledDown ? 18 : 20} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-white' : 'text-white/70'}`} />
+                      )}
+                      
+                      {!isScrolledDown && (
+                        <span className="relative z-10 text-[10px] font-medium mt-0.5 leading-none transition-all duration-300">
+                          {link.label}
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </LiquidGlass>
       </div>
     </>
   );
