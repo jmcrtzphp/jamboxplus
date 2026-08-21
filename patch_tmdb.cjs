@@ -1,9 +1,14 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/lib/tmdb.ts', 'utf-8');
+let tmdb = fs.readFileSync('src/lib/tmdb.ts', 'utf-8');
 
-code = code.replace(
-  'const CACHE_TTL = 1000 * 60 * 5; // 5 minutes',
-  'const CACHE_TTL = 1000 * 60 * 30; // 30 minutes'
+tmdb = tmdb.replace(
+  'cast?: { name: string; profilePath?: string }[];',
+  'cast?: { id?: number; name: string; character?: string; profilePath?: string }[];\n  creators?: string[];'
 );
 
-fs.writeFileSync('src/lib/tmdb.ts', code);
+tmdb = tmdb.replace(
+  '    directors: data.directors,',
+  '    directors: data.directors,\n    creators: data.creators,'
+);
+
+fs.writeFileSync('src/lib/tmdb.ts', tmdb);

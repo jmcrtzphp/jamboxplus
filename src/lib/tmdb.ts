@@ -60,7 +60,8 @@ export interface Show {
   runtime?: number; // minutes
   genres?: { id: string; name: string }[];
   directors?: string[];
-  cast?: string[];
+  cast?: { id?: number; name: string; character?: string; profilePath?: string }[];
+  creators?: string[];
   imageSet?: {
     poster?: string;
     verticalPoster?: { w240?: string; w360?: string; w480?: string; w600?: string; w720?: string; };
@@ -71,6 +72,8 @@ export interface Show {
   episodeCount?: number;
   seasons?: SeasonInfo[];
   videos?: any[];
+  originCountry?: string;
+  originalLanguage?: string;
 }
 
 export interface FilterParams {
@@ -87,6 +90,7 @@ export interface FilterParams {
   year_max?: number;
   order_by?: string;
   cursor?: string;
+  limit?: number;
   series_granularity?: string;
   title?: string;
 }
@@ -98,8 +102,10 @@ export interface PaginatedResult<T> {
 }
 
 // Convert TMDB response to our normalized Model
+export const globalShowCache = new Map<string, Show>();
+
 function normalizeShow(data: any): Show {
-  return {
+  const show: Show = {
     id: data.id,
     imdbId: data.imdbId,
     tmdbId: data.tmdbId,
@@ -112,14 +118,25 @@ function normalizeShow(data: any): Show {
     runtime: data.runtime,
     genres: data.genres,
     directors: data.directors,
+    creators: data.creators,
     cast: data.cast,
     imageSet: data.imageSet,
     streamingOptions: data.streamingOptions,
     seasonCount: data.seasonCount,
     episodeCount: data.episodeCount,
     seasons: data.seasons,
-    videos: data.videos
+    videos: data.videos,
+    originCountry: data.originCountry,
+    originalLanguage: data.originalLanguage
   };
+
+  if (globalShowCache.has(show.id)) {
+    const existing = globalShowCache.get(show.id)!;
+    Object.assign(existing, Object.fromEntries(Object.entries(show).filter(([_, v]) => v !== undefined)));
+  } else {
+    globalShowCache.set(show.id, show);
+  }
+  return globalShowCache.get(show.id)!;
 }
 
 // Simple memory cache for API responses

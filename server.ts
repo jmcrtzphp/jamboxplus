@@ -315,7 +315,8 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
   }
 
   const directors = item.credits?.crew?.filter((c: any) => c.job === 'Director' || c.department === 'Directing').map((c: any) => c.name) || item.directors || [];
-  const cast = item.credits?.cast?.slice(0, 8).map((c: any) => c.name) || item.cast || [];
+  const cast = item.credits?.cast?.filter((c: any) => c.profile_path).slice(0, 12).map((c: any) => ({ id: c.id, name: c.name, character: c.character, profilePath: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : undefined })) || item.cast || [];
+  const creators = item.created_by?.map((c: any) => c.name) || item.creators || [];
 
   const rawDate = item.release_date || item.first_air_date || item.releaseYear;
   const releaseYear = rawDate ? String(rawDate).split('-')[0] : undefined;
@@ -347,7 +348,7 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
     rating: item.vote_average !== undefined ? Math.round(item.vote_average * 10) : item.rating,
     runtime: item.runtime || (Array.isArray(item.episode_run_time) ? item.episode_run_time[0] : undefined),
     genres,
-    directors,
+    directors, creators,
     cast,
     imageSet: {
       poster: posterPath,
@@ -376,7 +377,10 @@ function normalizeTmdbShow(item: any, forceType?: 'movie' | 'tv' | 'series'): an
       posterPath: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : undefined,
       airDate: s.air_date
     })),
-    videos: item.videos?.results || []
+    videos: item.videos?.results || [],
+    originCountry: Array.isArray(item.origin_country) ? item.origin_country[0] : item.origin_country,
+    originalLanguage: item.original_language
+
   };
 }
 
@@ -1120,12 +1124,86 @@ app.get("/api/tv/:id/season/:seasonNumber", async (req, res) => {
 async function startServer() {
   const PORT = 3000;
   
+  let viteServer;
   if (process.env.NODE_ENV !== "production") {
     const vite = await import("vite");
-    const viteServer = await vite.createServer({
+    viteServer = await vite.createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
+  }
+
+  // Social Media Pre-rendering Interceptor
+  app.get('*', async (req, res, next) => {
+    // Only intercept paths that could be shared, ignore static assets
+    if (!req.path.startsWith('/movie/') && !req.path.startsWith('/tv/') && req.path !== '/') {
+      return next();
+    }
+
+    try {
+      const isMovie = req.path.startsWith('/movie/');
+      const isTv = req.path.startsWith('/tv/');
+      
+      let html = '';
+      
+      if (process.env.NODE_ENV !== "production") {
+        const fsPath = path.resolve(process.cwd(), 'index.html');
+        html = fs.readFileSync(fsPath, 'utf-8');
+        html = await viteServer.transformIndexHtml(req.originalUrl, html);
+      } else {
+        const fsPath = path.resolve(process.cwd(), 'dist', 'index.html');
+        html = fs.readFileSync(fsPath, 'utf-8');
+      }
+
+      let title = "JamBox+ | Watch Movies & TV Shows Streaming";
+      let description = "Watch movies and TV shows on JamBox+. Discover your next favorite movie or series.";
+      let image = "https://jamboxplusph.dpdns.org/preview.jpg";
+      let url = "https://jamboxplusph.dpdns.org" + (req.path === '/' ? '' : req.path);
+
+      if (isMovie || isTv) {
+        const parts = req.path.split('/');
+        const idStr = parts[parts.length - 1];
+        if (idStr) {
+           try {
+             const type = isMovie ? 'movie' : 'tv';
+             const cleanId = idStr.replace(/^(movie|series|tv)-/, '');
+             const data = await fetchTmdb(`/${type}/${cleanId}`);
+             if (data && (data.title || data.name)) {
+               title = `${data.title || data.name} | JamBox+`;
+               description = (data.overview || description).substring(0, 200);
+               const backdrop = data.backdrop_path || data.poster_path;
+               if (backdrop) {
+                 image = `https://image.tmdb.org/t/p/w1280${backdrop}`;
+               }
+             }
+           } catch(e) {
+             console.error('Failed to fetch social metadata for', req.path, e.message);
+           }
+        }
+      }
+
+      const escapeAttr = (str) => String(str).replace(/"/g, '&quot;');
+      
+      html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
+      
+      html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/>/gi, `<meta property="og:title" content="${escapeAttr(title)}" />`);
+      html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/gi, `<meta property="og:description" content="${escapeAttr(description)}" />`);
+      html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/>/gi, `<meta property="og:image" content="${escapeAttr(image)}" />`);
+      html = html.replace(/<meta\s+property="og:url"\s+content="[^"]*"\s*\/>/gi, `<meta property="og:url" content="${escapeAttr(url)}" />`);
+      
+      html = html.replace(/<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/>/gi, `<meta name="twitter:title" content="${escapeAttr(title)}" />`);
+      html = html.replace(/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/>/gi, `<meta name="twitter:description" content="${escapeAttr(description)}" />`);
+      html = html.replace(/<meta\s+name="twitter:image"\s+content="[^"]*"\s*\/>/gi, `<meta name="twitter:image" content="${escapeAttr(image)}" />`);
+      
+      html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/>/gi, `<link rel="canonical" href="${escapeAttr(url)}" />`);
+
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  if (process.env.NODE_ENV !== "production") {
     app.use(viteServer.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');

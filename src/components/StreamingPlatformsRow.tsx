@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STREAMING_PLATFORMS_CARDS = [
   { id: 'netflix', title: 'Netflix', img: 'https://i.imgflip.com/azc2q3.gif' },
@@ -13,6 +14,19 @@ interface Props {
 }
 
 export function StreamingPlatformsRow({ onSelectPlatform }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current;
+      const scrollAmount = clientWidth * 0.75;
+      scrollRef.current.scrollTo({
+        left: dir === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto pt-4">
       <div className="flex items-center justify-between mb-4">
@@ -24,7 +38,18 @@ export function StreamingPlatformsRow({ onSelectPlatform }: Props) {
         </div>
       </div>
       
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
+      <div className="relative">
+        <div className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('left')}
+            className="w-10 h-10 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronLeft size={20} className="text-white" />
+          </button>
+        </div>
+        
+        <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth">
+
         {STREAMING_PLATFORMS_CARDS.map(platform => (
           <div 
             key={platform.id}
@@ -42,6 +67,16 @@ export function StreamingPlatformsRow({ onSelectPlatform }: Props) {
             <div className="absolute inset-0 bg-black/10 group-hover/card:bg-transparent transition-colors duration-300 pointer-events-none" />
           </div>
         ))}
+              </div>
+        
+        <div className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('right')}
+            className="w-10 h-10 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={20} className="text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );

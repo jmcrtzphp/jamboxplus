@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { flushSync } from 'react-dom';
 import { Play, X, Star, Check, Plus, ChevronLeft, ChevronRight, Layers, Clock, Calendar, Bookmark, RotateCcw, Sparkles, ExternalLink, Loader2, Film, Tv, Maximize, Minimize, RotateCw, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Show, Episode, SeasonDetails, fetchShowDetails, fetchSeasonDetails, fetchRelatedShows } from '../lib/tmdb';
+import { Show, Episode, SeasonDetails, fetchShowDetails, fetchSeasonDetails, fetchRelatedShows, globalShowCache } from '../lib/tmdb';
 import { CineSrcPlayer } from './CineSrcPlayer';
 import { Footer } from './Footer';
 import { getWatchProgress, WatchProgressItem, removeWatchProgress } from '../lib/cinesrc';
@@ -26,11 +26,12 @@ export function WatchModal({
   onToggleFavorite,
   onSelectRelated
 }: WatchModalProps) {
-  const [show, setShow] = useState<Show | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [show, setShow] = useState<Show | null>(() => showId ? globalShowCache.get(showId) || null : null);
+  const [loading, setLoading] = useState(() => !showId || !globalShowCache.has(showId));
   const [relatedShows, setRelatedShows] = useState<Show[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const relatedScrollRef = useRef<HTMLDivElement>(null);
+  const trailerScrollRef = useRef<HTMLDivElement>(null);
   
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -446,26 +447,25 @@ export function WatchModal({
                     WebkitTransformOrigin: '50% 0%',
                   }}
                 >
-                  {trailerUrl && !isPlaying ? (
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {trailerUrl && !isPlaying && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
                       <iframe 
-                        className="absolute top-1/2 left-1/2 w-[300vw] h-[300vh] sm:w-[150vw] sm:h-[150vh] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 opacity-70"
+                        className="absolute top-1/2 left-1/2 sm:w-[200vw] aspect-video max-w-none -translate-x-1/2 -translate-y-1/2 opacity-70"
                         src={trailerUrl}
                         allow="autoplay; encrypted-media" 
                         allowFullScreen
                         style={{ pointerEvents: 'none' }}
                       />
                     </div>
-                  ) : (
-                    <img
-                      src={backdrop}
-                      alt={show.title}
-                      decoding="sync"
-                      loading="eager"
-                      fetchPriority="high"
-                      className="w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform"
-                    />
                   )}
+                  <img
+                    src={backdrop}
+                    alt={show.title}
+                    decoding="sync"
+                    loading="eager"
+                    fetchPriority="high"
+                    className={`w-full h-full object-cover object-center scale-105 filter brightness-100 will-change-transform ${trailerUrl && !isPlaying ? 'block sm:hidden' : 'block'}`}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent z-0" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0F1113] via-[#0F1113]/60 via-30% to-transparent w-full md:w-2/3 z-0" />
                 </motion.div>
@@ -663,35 +663,213 @@ export function WatchModal({
               )}
 
               {/* Main Metadata Layout */}
-              <div className="pt-6 border-t border-white/5">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Cast</span>
-                    <div className="text-white/90 leading-relaxed font-medium">
-                      {show.cast?.slice(0, 5).join(', ') || 'Unknown'}
+              <div className="pt-6 border-t border-white/5 space-y-8 mt-6">
+                
+                {/* Cast */}
+                {show.cast && show.cast.length > 0 && (
+                  <section className="watch-modal-section mt-6">
+                    <h3 className="text-white/50 font-semibold mb-3 uppercase tracking-wider text-[10px]">Cast</h3>
+                    <div className="flex gap-4 sm:gap-5 overflow-x-auto pb-1.5 scrollbar-hide snap-x">
+                      {show.cast.map((actor, idx) => (
+                        <div key={actor.id || idx} className="flex-shrink-0 w-[95px] sm:w-[120px] text-center snap-center">
+                          {actor.profilePath ? (
+                            <img src={actor.profilePath} alt={actor.name} loading="lazy" className="mx-auto w-[82px] h-[82px] sm:w-[100px] sm:h-[100px] object-cover rounded-full shadow-md border border-white/10" />
+                          ) : (
+                            <div className="mx-auto w-[82px] h-[82px] sm:w-[100px] sm:h-[100px] rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/30 border border-white/5 shadow-md">
+                              {actor.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="mt-3 text-[11px] sm:text-xs font-medium text-white/90 truncate px-1" title={actor.name}>{actor.name}</div>
+                          {actor.character && (
+                            <div className="text-[9px] sm:text-[10px] text-white/50 truncate px-1 mt-0.5" title={actor.character}>{actor.character}</div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div>
-                    <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Genres</span>
-                    <div className="text-white/90 leading-relaxed font-medium">
-                      {show.genres?.map(g => g.name).join(', ') || 'Unknown'}
-                    </div>
-                  </div>
-                  {show.directors && show.directors.length > 0 && (
-                    <div>
-                      <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Director</span>
-                      <div className="text-white/90 leading-relaxed font-medium">
-                        {show.directors.join(', ')}
+                  </section>
+                )}
+
+                {/* Trailer Clips */}
+                {(() => {
+                  if (!show.videos || show.videos.length === 0) return null;
+                  
+                  const trailerClips = show.videos
+                    .filter(video => video.site === "YouTube" && ["Trailer", "Teaser", "Clip", "Featurette"].includes(video.type))
+                    .sort((a, b) => {
+                      const priority = { Trailer: 1, Teaser: 2, Clip: 3, Featurette: 4 };
+                      return (priority[a.type] || 99) - (priority[b.type] || 99);
+                    });
+                  
+                  if (trailerClips.length === 0) return null;
+                  
+                  const officialVideos = trailerClips.filter(video => video.official);
+                  const displayVideos = officialVideos.length > 0 ? officialVideos.slice(0, 8) : trailerClips.slice(0, 8);
+                  
+                  return (
+                    <section className="watch-modal-section mt-6 border-t border-white/5 pt-6">
+                      <h3 className="text-white/50 font-semibold mb-3 uppercase tracking-wider text-[10px]">Trailer & Clips</h3>
+                      <div className="relative group/trailer-carousel">
+                        <button
+                          className="absolute left-2 top-[60px] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover/trailer-carousel:opacity-100 transition-all hidden sm:flex text-white hover:bg-black/80 hover:scale-110 shadow-lg disabled:opacity-0"
+                          onClick={() => {
+                            if (trailerScrollRef.current) {
+                              trailerScrollRef.current.scrollBy({ left: -400, behavior: 'smooth' });
+                            }
+                          }}
+                        >
+                          <ChevronLeft className="w-6 h-6 mr-0.5" />
+                        </button>
+                        
+                        <div ref={trailerScrollRef} className="flex gap-3 overflow-x-auto pb-1.5 scrollbar-hide snap-x relative z-0 scroll-smooth">
+                          {displayVideos.map((video, idx) => (
+                            <button
+                              key={video.id || idx}
+                              onClick={() => window.open(`https://www.youtube.com/watch?v=${video.key}`, '_blank')}
+                              className="flex-shrink-0 w-[210px] sm:w-[240px] bg-transparent border-0 text-left cursor-pointer snap-center group/trailer"
+                            >
+                              <div className="relative aspect-video overflow-hidden rounded-[14px] bg-black/20 border border-white/5 mb-2">
+                                <img
+                                  src={`https://img.youtube.com/vi/${video.key}/hqdefault.jpg`}
+                                  alt={video.name}
+                                  loading="lazy"
+                                  className="w-full h-full object-cover opacity-80 group-hover/trailer:opacity-100 transition-opacity"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-10 h-10 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white/90 group-hover/trailer:scale-110 group-hover/trailer:bg-white/20 transition-all backdrop-blur-sm shadow-md">
+                                    <Play className="w-4 h-4 ml-1 fill-current" />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-[11px] sm:text-xs font-medium text-white/90 truncate px-1" title={video.name}>{video.name}</div>
+                              <div className="text-[9px] sm:text-[10px] text-white/50 truncate px-1 mt-0.5" title={video.type}>{video.type}</div>
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          className="absolute right-2 top-[60px] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover/trailer-carousel:opacity-100 transition-all hidden sm:flex text-white hover:bg-black/80 hover:scale-110 shadow-lg disabled:opacity-0"
+                          onClick={() => {
+                            if (trailerScrollRef.current) {
+                              trailerScrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+                            }
+                          }}
+                        >
+                          <ChevronRight className="w-6 h-6 ml-0.5" />
+                        </button>
                       </div>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-white/50 block font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Details</span>
-                    <div className="text-white/70 font-mono text-xs font-medium">
-                      TMDB #{tmdbId}
-                    </div>
+                    </section>
+                  );
+                })()}
+
+                {/* Movie/TV Details */}
+                <section className="watch-modal-section mt-6 border-t border-white/5 pt-6">
+                  <h3 className="text-white/50 font-semibold mb-4 uppercase tracking-wider text-[10px]">
+                    {show.showType === 'series' ? 'TV Show Details' : 'Movie Details'}
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Genre */}
+                    {show.genres && show.genres.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[12px] opacity-55 text-white/60">Genre</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {show.genres.map(genre => (
+                            <span key={genre.id} className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/5 text-white/80">
+                              {genre.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Director / Creator */}
+                    {(() => {
+                       const isTV = show.showType === 'series';
+                       const directors = show.directors?.join(', ');
+                       const creators = show.creators?.join(', ');
+                       
+                       if (!isTV && directors) {
+                         return (
+                           <div className="flex flex-col gap-1.5">
+                             <span className="text-[12px] opacity-55 text-white/60">Director</span>
+                             <span className="text-[14px] text-white/90">{directors}</span>
+                           </div>
+                         );
+                       }
+                       if (isTV && creators) {
+                         return (
+                           <div className="flex flex-col gap-1.5">
+                             <span className="text-[12px] opacity-55 text-white/60">Creator</span>
+                             <span className="text-[14px] text-white/90">{creators}</span>
+                           </div>
+                         );
+                       }
+                       if (isTV && directors) {
+                         return (
+                           <div className="flex flex-col gap-1.5">
+                             <span className="text-[12px] opacity-55 text-white/60">Director</span>
+                             <span className="text-[14px] text-white/90">{directors}</span>
+                           </div>
+                         );
+                       }
+                       return null;
+                    })()}
+
+                    {/* Release Info */}
+                    {show.releaseYear && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[12px] opacity-55 text-white/60">Year</span>
+                        <span className="text-[14px] text-white/90">{show.releaseYear}</span>
+                      </div>
+                    )}
+                    
+                    {/* Runtime */}
+                    {show.runtime && show.runtime > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[12px] opacity-55 text-white/60">Runtime</span>
+                        <span className="text-[14px] text-white/90">
+                          {show.runtime >= 60 ? `${Math.floor(show.runtime / 60)}h ${show.runtime % 60 > 0 ? `${show.runtime % 60}m` : ''}` : `${show.runtime}m`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Origin Country */}
+                    {show.originCountry && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[12px] opacity-55 text-white/60">Origin Country</span>
+                        <span className="text-[14px] text-white/90">
+                          {(() => {
+                            const code = show.originCountry;
+                            const regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+                            try {
+                              return regionNames.of(code) || code;
+                            } catch (e) {
+                              return code;
+                            }
+                          })()}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Original Language */}
+                    {show.originalLanguage && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[12px] opacity-55 text-white/60">Original Language</span>
+                        <span className="text-[14px] text-white/90 capitalize">
+                          {(() => {
+                            const code = show.originalLanguage;
+                            const languageNames = new Intl.DisplayNames(['en'], {type: 'language'});
+                            try {
+                              return languageNames.of(code) || code;
+                            } catch (e) {
+                              return code;
+                            }
+                          })()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </section>
               </div>
 
               {/* Related Shows (You May Also Like) */}

@@ -6,6 +6,7 @@ import { GENRES, GENRE_LIST, DEFAULT_GENRE_IMAGES, UnifiedGenre } from '../lib/g
 
 import { PLATFORMS, StreamingPlatformIcon, resolvePlatform, PlatformBadge } from '../lib/platforms';
 import { GlassButton, GlassPill, GlassContainer } from './liquid-glass';
+import { LiquidGlass } from './LiquidGlass';
 import { lazy, Suspense } from 'react';
 const WatchModal = lazy(() => import('./WatchModal').then(module => ({ default: module.WatchModal })));
 import { ContinueWatchingRow } from './ContinueWatchingRow';
@@ -544,7 +545,6 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
       setIsInView(true);
       return;
     }
-
     try {
       const observer = new IntersectionObserver((entries) => {
         if (entries[0]?.isIntersecting) {
@@ -616,12 +616,14 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
       </div>
       
       <div className="relative">
-        <button 
-          onClick={() => scroll('left')} 
-          className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-r-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-        >
-          <ChevronRight size={24} className="rotate-180 text-white" />
-        </button>
+        <div className="absolute -left-5 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('left')}
+            className="w-12 h-12 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={24} className="rotate-180 text-white" />
+          </button>
+        </div>
         
         <div ref={scrollRef} className="flex gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide snap-x py-4 -my-4 pl-1 pr-12">
           {shows.map((show, index) => (
@@ -637,12 +639,14 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
           ))}
         </div>
         
-        <button 
-          onClick={() => scroll('right')} 
-          className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-l-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-        >
-          <ChevronRight size={24} className="text-white" />
-        </button>
+        <div className="absolute -right-5 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('right')}
+            className="w-12 h-12 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={24} className="text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -663,7 +667,6 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
       setIsInView(true);
       return;
     }
-
     try {
       const observer = new IntersectionObserver((entries) => {
         if (entries[0]?.isIntersecting) {
@@ -671,7 +674,6 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
           observer.disconnect();
         }
       }, { rootMargin: '200px' });
-      
       observer.observe(containerRef.current);
       return () => observer.disconnect();
     } catch (_) {
@@ -679,19 +681,30 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
     }
   }, []);
 
-  const loadData = useCallback(() => {
+  useEffect(() => {
     if (!isInView) return;
+    let isMounted = true;
     setLoading(true);
     setError(null);
-    fetchFilters({ country, show_type: type, catalogs: p.providerId, order_by: 'popularity_1week' })
-      .then(res => setShows(res.shows))
-      .catch(err => setError(err.message || 'Failed to load'))
-      .finally(() => setLoading(false));
-  }, [country, type, p.providerId, isInView]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+    
+    fetchFilters({ 
+      country, 
+      show_type: type,
+      catalogs: p.providerId,
+      order_by: 'popularity_1week',
+      with_watch_monetization_types: 'flatrate',
+      limit: 20
+    }).then((res: any) => {
+      if (isMounted) setShows(res?.shows || []);
+    }).catch((err: any) => {
+      console.error(`PlatformRow error (${p.displayName}):`, err);
+      if (isMounted) setError('Failed to load shows');
+    }).finally(() => {
+      if (isMounted) setLoading(false);
+    });
+    
+    return () => { isMounted = false; };
+  }, [platformId, type, country, isInView, p]);
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -707,9 +720,9 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
   if (loading || !isInView) {
     return (
       <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 space-y-4" ref={containerRef}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-white/10 animate-pulse" />
-          <div className="h-5 w-40 bg-white/10 rounded-full animate-pulse" />
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+          <div className="h-6 w-32 bg-white/10 rounded-full animate-pulse" />
         </div>
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -726,14 +739,10 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
     <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <StreamingPlatformIcon platformId={platformId} />
-          <div>
-            <div className="text-[10px] text-white/50 uppercase font-bold tracking-wider mb-0.5">{p.displayName}</div>
-            <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
-              Top {type === 'movie' ? 'Movies' : 'Shows'} on {p.displayName}
-            </h3>
-          </div>
+          <StreamingPlatformIcon platformId={platformId} className="w-8 h-8" />
+          <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow">{p.displayName}</h3>
         </div>
+        
         <button 
           onClick={onSeeAll}
           className="text-xs font-semibold text-white/60 hover:text-white flex items-center gap-1 group/btn glass-subtle px-3 py-1 rounded-full cursor-pointer transition-colors"
@@ -743,12 +752,14 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
       </div>
       
       <div className="relative">
-        <button 
-          onClick={() => scroll('left')} 
-          className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-r-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-        >
-          <ChevronRight size={24} className="rotate-180 text-white" />
-        </button>
+        <div className="absolute -left-5 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('left')}
+            className="w-12 h-12 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={24} className="rotate-180 text-white" />
+          </button>
+        </div>
         
         <div ref={scrollRef} className="flex gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide snap-x py-4 -my-4 pl-1 pr-12">
           {shows.slice(0, 12).map((show, index) => (
@@ -765,12 +776,14 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
           ))}
         </div>
         
-        <button 
-          onClick={() => scroll('right')} 
-          className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-24 glass-subtle rounded-l-2xl hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-        >
-          <ChevronRight size={24} className="text-white" />
-        </button>
+        <div className="absolute -right-5 top-1/2 -translate-y-1/2 z-20 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => scroll('right')}
+            className="w-12 h-12 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={24} className="text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );

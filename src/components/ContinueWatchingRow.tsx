@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Clock, X, ChevronLeft, ChevronRight, Film, Tv } from 'lucide-react';
 import { getAllWatchProgress, removeWatchProgress, WatchProgressItem } from '../lib/cinesrc';
 import { GlassPill } from './liquid-glass';
+import { LiquidGlass } from './LiquidGlass';
 
 interface ContinueWatchingRowProps {
   onSelect: (id: string) => void;
@@ -64,18 +65,22 @@ export function ContinueWatchingRow({ onSelect, filterType = 'all' }: ContinueWa
 
         {items.length > 3 && (
           <div className="hidden sm:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 md:right-12 top-0 -mt-1 z-10">
-            <button
-              onClick={() => scroll('left')}
-              className="p-1.5 rounded-full glass-subtle hover:glass-medium text-white transition-all cursor-pointer"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="p-1.5 rounded-full glass-subtle hover:glass-medium text-white transition-all cursor-pointer"
-            >
-              <ChevronRight size={16} />
-            </button>
+            <div className="pointer-events-auto">
+              <button
+            onClick={() => scroll('left')}
+            className="w-8 h-8 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronLeft size={16} className="text-white" />
+          </button>
+            </div>
+            <div className="pointer-events-auto">
+              <button
+            onClick={() => scroll('right')}
+            className="w-8 h-8 rounded-full glass-button flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+          >
+            <ChevronRight size={16} className="text-white" />
+          </button>
+            </div>
           </div>
         )}
       </div>

@@ -1,4 +1,6 @@
-import React from 'react';
+const fs = require('fs');
+
+const code = `import React from 'react';
 
 export function Logo({ className = "w-8 h-8" }: { className?: string }) {
   return (
@@ -12,8 +14,11 @@ export function Logo({ className = "w-8 h-8" }: { className?: string }) {
 
 export function JamBoxText({ className = "text-xl" }: { className?: string }) {
   return (
-    <span className={`font-bold tracking-widest text-white drop-shadow ${className}`} style={{ fontFamily: 'sans-serif' }}>
+    <span className={\`font-bold tracking-widest text-white drop-shadow \${className}\`} style={{ fontFamily: 'sans-serif' }}>
       JAMBOX<span className="text-amber-500">+</span>
     </span>
   );
 }
+`;
+
+fs.writeFileSync('src/components/Logo.tsx', code);
