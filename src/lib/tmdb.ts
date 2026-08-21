@@ -77,7 +77,8 @@ export interface FilterParams {
   country: string;
   movie_genre?: number | null;
   tv_genre?: number | null;
-  show_type?: 'movie' | 'series';
+  show_type?: 'movie' | 'series' | 'all';
+  with_watch_monetization_types?: string;
   catalogs?: string;
   in_theaters?: boolean;
   genres?: string;
@@ -125,7 +126,7 @@ function normalizeShow(data: any): Show {
 const apiCache = new Map<string, { data: any; timestamp: number }>();
 // In-flight requests deduplicator
 const inFlightRequests = new Map<string, Promise<any>>();
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 
 export interface SearchSuggestion {
   id: string;
@@ -216,7 +217,7 @@ async function tmdbRequest<T>(endpoint: string, params: Record<string, any> = {}
 }
 
 export async function fetchFilters(params: FilterParams): Promise<PaginatedResult<Show>> {
-  const endpoint = params.show_type === 'series' ? '/tv-shows' : '/movies';
+  const endpoint = params.show_type === 'all' ? '/discover' : (params.show_type === 'series' ? '/tv-shows' : '/movies');
   const data = await tmdbRequest<any>(endpoint, params);
   
   return {

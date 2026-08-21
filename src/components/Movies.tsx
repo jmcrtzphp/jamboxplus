@@ -14,6 +14,7 @@ import { useElasticOverscroll } from '../hooks/useElasticOverscroll';
 import { usePullDownZoom } from '../hooks/usePullDownZoom';
 
 import { FloatingNav } from './FloatingNav';
+import { StreamingPlatformsRow } from './StreamingPlatformsRow';
 
 interface MoviesProps {
   onBack: () => void;
@@ -28,6 +29,7 @@ export function Movies({ onBack, onNavigate, onOpenCookies, onOpenPrivacy, onOpe
   const [activePlatform, setActivePlatform] = useState<{ id: string, type: 'movie' | 'series' } | null>(null);
   
   const country = 'us';
+  
   const [heroMovies, setHeroMovies] = useState<Show[]>([]);
   const [heroTVs, setHeroTVs] = useState<Show[]>([]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -288,6 +290,7 @@ function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavor
 
       <div className="space-y-10 relative z-20 pb-20 -mt-10 md:-mt-20">
         <ContinueWatchingRow onSelect={onSelectMovie} filterType="movie" />
+        <StreamingPlatformsRow onSelectPlatform={(id) => onSeeAll(id, 'all')} />
 
         <CategoryRow 
           title="Top Rated Movies" 
@@ -599,7 +602,18 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
 
   return (
     <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef}>
-      <h3 className="text-lg sm:text-xl font-extrabold text-white mb-4 tracking-tight drop-shadow">{title}</h3>
+      <div className="flex items-center gap-2.5 mb-4">
+        {title.toLowerCase().includes('top rated') && (
+          <svg className="w-5 h-5 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+            <g strokeWidth="0"></g>
+            <g strokeLinecap="round" strokeLinejoin="round"></g>
+            <g>
+              <path d="M11,3.19a1.08,1.08,0,0,1,2.06,0l1.86,5.72h6a1.09,1.09,0,0,1,.64,2l-4.87,3.53,1.86,5.73a1.08,1.08,0,0,1-1.67,1.21L12,17.81,7.13,21.35a1.08,1.08,0,0,1-1.67-1.21l1.86-5.73L2.45,10.88a1.09,1.09,0,0,1,.64-2h6Z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" fillRule="evenodd"></path>
+            </g>
+          </svg>
+        )}
+        <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow">{title}</h3>
+      </div>
       
       <div className="relative">
         <button 
@@ -782,6 +796,7 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
       show_type: type, 
       catalogs: p.providerId, 
       order_by: 'popularity_1week',
+      with_watch_monetization_types: 'flatrate',
       cursor: reset ? undefined : nextCursor
     }).then(res => {
       setShows(prev => reset ? res.shows : [...prev, ...res.shows]);
@@ -915,12 +930,11 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
             <StreamingPlatformIcon platformId={platformId} className="w-14 h-14 sm:w-16 sm:h-16 text-xl rounded-2xl shadow-2xl" />
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{p.displayName}</h1>
-              <p className="text-white/60 text-sm sm:text-base">Top {type === 'movie' ? 'Movies' : 'TV Shows'}</p>
+              <p className="text-white/60 text-sm sm:text-base">{type === 'all' ? 'Top Movies & TV Shows' : (type === 'movie' ? 'Top Movies' : 'Top TV Shows')}</p>
             </div>
           </div>
         </div>
       )}
-
       {/* 2. Platform Catalogue Content Grid */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-[1600px] mx-auto pt-8">
         <div className="flex items-center justify-between mb-6">
@@ -928,7 +942,7 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
             <StreamingPlatformIcon platformId={platformId} className="w-8 h-8 rounded-xl" />
             <div>
               <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                All {p.displayName} {type === 'movie' ? 'Movies' : 'TV Shows'}
+                All {p.displayName} {type === 'all' ? 'Movies & TV Shows' : (type === 'movie' ? 'Movies' : 'TV Shows')}
               </h2>
               <p className="text-xs sm:text-sm text-white/50">
                 Curated stream catalog for {country.toUpperCase()}
@@ -1679,3 +1693,5 @@ function SearchPage({ country, searchQuery, setSearchQuery, onSelectMovie, isFav
     </div>
   );
 }
+
+

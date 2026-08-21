@@ -187,7 +187,7 @@ export function FloatingNav({
   }, []);
 
   const links: Array<{ id: string, label: string, icon: any, mobileIcon?: any, mobileLabel?: string, action?: () => void }> = [
-    { id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
+{ id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
     { id: 'tv', label: 'TV Shows', icon: Tv, mobileIcon: CustomTvIcon },
         { id: 'favorites', label: `Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`, icon: Bookmark, mobileLabel: 'Favorites', mobileIcon: CustomBookmarkIcon }
   ];

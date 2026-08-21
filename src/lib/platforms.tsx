@@ -15,7 +15,8 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
   disney: { id: 'disney', displayName: 'Disney+', providerId: '337', color: '#113CCF', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg' },
   prime: { id: 'prime', displayName: 'Prime Video', providerId: '9', color: '#00A8E1', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prime-video-alt-dark.svg' },
   apple: { id: 'apple', displayName: 'Apple TV+', providerId: '350', color: '#FFFFFF', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apple-tv-plus-light.svg' },
-  max: { id: 'max', displayName: 'HBO Max', providerId: '1899', color: '#002BE7', logoPath: 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/hbo-max-light.svg' }
+  max: { id: 'max', displayName: 'HBO Max', providerId: '1899', color: '#002BE7', logoPath: 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/hbo-max-light.svg' },
+  paramount: { id: 'paramount', displayName: 'Paramount+', providerId: '531', color: '#0064FF', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Paramount_Plus.svg' }
 };
 
 export interface ResolvedPlatform {
@@ -63,7 +64,8 @@ export function resolvePlatform(platformId?: string, show?: Show, country: strin
             (key === 'prime' && (name.includes('amazon') || name.includes('prime'))) || 
             (key === 'disney' && name.includes('disney')) || 
             (key === 'max' && (name.includes('max') || name.includes('hbo'))) ||
-            (key === 'apple' && name.includes('apple'))
+            (key === 'apple' && name.includes('apple')) ||
+            (key === 'paramount' && name.includes('paramount'))
           ) {
             const src = p.logoPath.startsWith('http') ? p.logoPath : `https://image.tmdb.org/t/p/w200${p.logoPath}`;
             return {

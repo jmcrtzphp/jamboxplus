@@ -1,43 +1,21 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/components/WatchModal.tsx', 'utf8');
+let lines = fs.readFileSync('src/components/Movies.tsx', 'utf-8').split('\n');
 
-// The messed up tail is something like:
-/*
-                )}
-              </div>
-            </div>
-          </div>
-            <Footer />
-          </div>
-        ) : null}
-      </motion.div>
-    </div>
-  );
+const garbageStart = lines.findIndex(l => l.includes('hideHero={true}'));
+
+if (garbageStart > -1) {
+  // Let's go up a few lines to where it actually broke.
+  // The correct end is:
+  //       )}
+  //     </div>
+  //   );
+  // }
+  const realEnd = lines.findIndex(l => l.startsWith('}           onSelectMovie={onSelectMovie}'));
+  if (realEnd > -1) {
+    lines[realEnd] = '}';
+    lines = lines.slice(0, realEnd + 1);
+    fs.writeFileSync('src/components/Movies.tsx', lines.join('\n'));
+    console.log("Fixed!");
+  }
 }
-*/
 
-const target = `                )}
-              </div>
-            </div>
-          </div>
-            <Footer />
-          </div>
-        ) : null}
-      </motion.div>
-    </div>
-  );
-}`;
-
-const replacement = `                )}
-              </div>
-            </div>
-            <Footer />
-          </div>
-        ) : null}
-      </motion.div>
-    </div>
-  );
-}`;
-
-content = content.replace(target, replacement);
-fs.writeFileSync('src/components/WatchModal.tsx', content);
