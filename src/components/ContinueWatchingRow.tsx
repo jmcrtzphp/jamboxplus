@@ -86,6 +86,16 @@ export function ContinueWatchingRow({ onSelect, filterType = 'all' }: ContinueWa
       >
         {items.map((item, index) => {
           const bgImg = item.backdrop || item.poster;
+          
+          // Generate srcset if we assume TMDB structure and it has imageSet
+          const hPoster = (item as any).imageSet?.horizontalPoster;
+          const srcSet = hPoster ? [
+            hPoster.w360 ? `${hPoster.w360} 360w` : null,
+            hPoster.w480 ? `${hPoster.w480} 480w` : null,
+            hPoster.w720 ? `${hPoster.w720} 720w` : null,
+            hPoster.w1080 ? `${hPoster.w1080} 1080w` : null,
+          ].filter(Boolean).join(', ') : undefined;
+
           const isMovie = item.mediaType === 'movie';
           const progressPercent = Math.min(100, Math.max(5, Math.round(item.percentage || 0)));
 
@@ -99,6 +109,8 @@ export function ContinueWatchingRow({ onSelect, filterType = 'all' }: ContinueWa
               {bgImg ? (
                 <img
                   src={bgImg}
+                  srcSet={srcSet}
+                  sizes="(max-width: 640px) 240px, (max-width: 768px) 280px, (max-width: 1024px) 320px, 360px"
                   alt={item.title}
                   loading="lazy"
                   decoding="async"

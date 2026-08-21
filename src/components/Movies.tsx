@@ -434,11 +434,20 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
         >
           {/* Background Posters with cross-fade */}
           {heroMovies.map((movie: any, idx: number) => {
-            const bg = movie.imageSet?.horizontalPoster?.w1080 || movie.imageSet?.horizontalPoster?.original || movie.imageSet?.horizontalPoster?.w720 || movie.imageSet?.poster;
+            const hPoster = movie.imageSet?.horizontalPoster;
+            const bg = hPoster?.w1080 || hPoster?.original || hPoster?.w720 || movie.imageSet?.poster;
+            const srcSet = hPoster ? [
+              hPoster.w480 ? `${hPoster.w480} 480w` : null,
+              hPoster.w720 ? `${hPoster.w720} 720w` : null,
+              hPoster.w1080 ? `${hPoster.w1080} 1080w` : null,
+              hPoster.original ? `${hPoster.original} 2000w` : null,
+            ].filter(Boolean).join(', ') : undefined;
             return (
               <img 
                 key={`${movie.id}-${idx}`}
                 src={bg} 
+                srcSet={srcSet}
+                sizes="100vw"
                 alt={movie.title} 
                 decoding={idx === activeIndex ? "sync" : "async"}
                 loading={idx === activeIndex ? "eager" : "lazy"}
@@ -998,7 +1007,17 @@ const MovieCard = React.memo(function MovieCard({
   isFavorite: boolean;
   onToggleFavorite: (e: React.MouseEvent, id: string) => void;
 }) {
-  const poster = show.imageSet?.verticalPoster?.w480 || show.imageSet?.verticalPoster?.w360 || show.imageSet?.verticalPoster?.w240 || show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+  const fallback = show.imageSet?.poster || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+  const vPoster = show.imageSet?.verticalPoster;
+  const srcSet = vPoster ? [
+    vPoster.w240 ? `${vPoster.w240} 240w` : null,
+    vPoster.w360 ? `${vPoster.w360} 360w` : null,
+    vPoster.w480 ? `${vPoster.w480} 480w` : null,
+    vPoster.w600 ? `${vPoster.w600} 600w` : null,
+  ].filter(Boolean).join(', ') : undefined;
+  
+  const poster = vPoster?.w480 || vPoster?.w360 || fallback;
+
   const resolvedPlatform = useMemo(() => resolvePlatform(platformId, show, country), [platformId, show, country]);
   
   const rawRating = show.rating;
@@ -1015,6 +1034,8 @@ const MovieCard = React.memo(function MovieCard({
       {/* Poster Image */}
       <img 
         src={poster} 
+        srcSet={srcSet}
+        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
         alt={show.title} 
         decoding="async"
         loading="lazy"

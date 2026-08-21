@@ -84,6 +84,7 @@ export function FloatingNav({
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [showSuggestionsDropdown, setShowSuggestionsDropdown] = useState(false);
+  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('jamtv_recent_searches');
@@ -144,6 +145,7 @@ export function FloatingNav({
     if (!searchQuery || searchQuery.trim().length < 2) {
       setSuggestions([]);
       setIsSuggesting(false);
+      setFocusedSuggestionIndex(-1);
       return;
     }
 
@@ -154,6 +156,7 @@ export function FloatingNav({
       fetchSearchSuggestions(searchQuery.trim(), controller.signal)
         .then(items => {
           setSuggestions(items);
+          setFocusedSuggestionIndex(-1);
           setIsSuggesting(false);
         })
         .catch(err => {
@@ -168,6 +171,20 @@ export function FloatingNav({
       controller.abort();
     };
   }, [searchQuery]);
+
+  // Click outside to close suggestions
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowSuggestionsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const links: Array<{ id: string, label: string, icon: any, mobileIcon?: any, mobileLabel?: string, action?: () => void }> = [
     { id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
@@ -186,7 +203,7 @@ export function FloatingNav({
         <JamBoxText className="text-[17px] ml-1.5" />
       </div>
 
-      <div className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
+      <div ref={containerRef} className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
         {/* Floating Glass Pill Container */}
         <div className="relative flex flex-col items-center">
           <LiquidGlass 
@@ -284,9 +301,30 @@ export function FloatingNav({
                         setShowSuggestionsDropdown(true);
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          saveRecentSearch(searchQuery);
-                          setShowSuggestionsDropdown(false);
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          if (showSuggestionsDropdown && suggestions.length > 0) {
+                            setFocusedSuggestionIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+                          }
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          if (showSuggestionsDropdown && suggestions.length > 0) {
+                            setFocusedSuggestionIndex(prev => Math.max(prev - 1, -1));
+                          }
+                        } else if (e.key === 'Enter') {
+                          if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < suggestions.length) {
+                            const item = suggestions[focusedSuggestionIndex];
+                            saveRecentSearch(item.title);
+                            setShowSuggestionsDropdown(false);
+                            if (onSelectMovie) {
+                              onSelectMovie(item.id);
+                            } else {
+                              setSearchQuery(item.title);
+                            }
+                          } else {
+                            saveRecentSearch(searchQuery);
+                            setShowSuggestionsDropdown(false);
+                          }
                         }
                       }}
                       className="w-full py-1.5 pl-8 pr-14 text-sm text-white bg-transparent outline-none placeholder-white/40"
@@ -372,7 +410,8 @@ export function FloatingNav({
                             setSearchQuery(item.title);
                           }
                         }}
-                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 cursor-pointer transition-colors group"
+                        onMouseEnter={() => setFocusedSuggestionIndex(index)}
+                        className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer transition-colors group ${focusedSuggestionIndex === index ? 'bg-white/15' : 'hover:bg-white/10'}`}
                       >
                         {item.poster ? (
                           <img src={item.poster} alt={item.title} className="w-9 h-13 object-cover rounded-lg bg-black/40 flex-shrink-0" />

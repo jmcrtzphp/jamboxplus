@@ -1,0 +1,32 @@
+--- src/components/FloatingNav.tsx
++++ src/components/FloatingNav.tsx
+@@ -166,6 +166,20 @@
+     };
+   }, [searchQuery]);
+ 
++  // Click outside to close suggestions
++  const containerRef = useRef<HTMLDivElement>(null);
++  useEffect(() => {
++    const handleClickOutside = (event: MouseEvent) => {
++      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
++        setShowSuggestionsDropdown(false);
++      }
++    };
++    document.addEventListener('mousedown', handleClickOutside);
++    return () => {
++      document.removeEventListener('mousedown', handleClickOutside);
++    };
++  }, []);
++
+   const links: Array<{ id: string, label: string, icon: any, mobileIcon?: any, mobileLabel?: string, action?: () => void }> = [
+     { id: 'movies', label: 'Movies', icon: Film, mobileIcon: CustomFilmIcon },
+     { id: 'tv', label: 'TV Shows', icon: Tv, mobileIcon: CustomTvIcon },
+@@ -183,7 +197,7 @@
+       <div className="sm:hidden fixed top-4 left-4 z-50 pointer-events-auto cursor-pointer flex items-center gap-2" onClick={onBack}>
+         <Logo className="w-9 h-9" />
+         <JamBoxText className="text-[17px] ml-1.5" />
+       </div>
+ 
+-      <div className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
++      <div ref={containerRef} className="hidden sm:flex fixed top-0 left-0 w-full justify-center py-5 z-50 pointer-events-none px-4">
+         {/* Floating Glass Pill Container */}
