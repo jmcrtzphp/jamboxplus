@@ -13,7 +13,7 @@ app.use(express.json());
 app.use('/api', (req, res, next) => {
   if (req.method === 'GET' && !req.path.includes('/visits') && !req.path.includes('/health')) {
     // Cache for 30 minutes in browser, 1 hour in CDN
-    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, max-age=7200, s-maxage=14400, stale-while-revalidate=86400');
   }
   next();
 });
@@ -175,7 +175,7 @@ app.get("/api/epg", async (req, res) => {
 // --- TMDB API & CATALOG ENGINE ---
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const cache = new Map<string, { data: any, time: number }>();
-const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 const TMDB_GENRE_MAP: Record<number, string> = {
   28: "Action",

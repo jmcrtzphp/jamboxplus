@@ -729,7 +729,7 @@ export function WatchModal({
                             >
                               <div className="relative aspect-video overflow-hidden rounded-[14px] bg-black/20 border border-white/5 mb-2">
                                 <img
-                                  src={`https://img.youtube.com/vi/${video.key}/hqdefault.jpg`}
+                                  src={`https://img.youtube.com/vi/${video.key}/mqdefault.jpg`}
                                   alt={video.name}
                                   loading="lazy"
                                   className="w-full h-full object-cover opacity-80 group-hover/trailer:opacity-100 transition-opacity"

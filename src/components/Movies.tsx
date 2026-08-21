@@ -587,7 +587,7 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
 
   if (loading || !isInView) {
     return (
-      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 space-y-4" ref={containerRef}>
+      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 space-y-4" ref={containerRef} style={{ contentVisibility: "auto", containIntrinsicSize: "0 300px" }}>
         <div className="h-6 w-48 bg-white/10 rounded-full animate-pulse" />
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -601,7 +601,7 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
   if (shows.length === 0) return null;
 
   return (
-    <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef}>
+    <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef} style={{ contentVisibility: "auto", containIntrinsicSize: "0 300px" }}>
       <div className="flex items-center gap-2.5 mb-4">
         {title.toLowerCase().includes('top rated') && (
           <svg className="w-5 h-5 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
@@ -719,7 +719,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
 
   if (loading || !isInView) {
     return (
-      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 space-y-4" ref={containerRef}>
+      <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 space-y-4" ref={containerRef} style={{ contentVisibility: "auto", containIntrinsicSize: "0 300px" }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
           <div className="h-6 w-32 bg-white/10 rounded-full animate-pulse" />
@@ -736,7 +736,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
   if (error || shows.length === 0) return null;
 
   return (
-    <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef}>
+    <div className="relative group px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16" ref={containerRef} style={{ contentVisibility: "auto", containIntrinsicSize: "0 300px" }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <StreamingPlatformIcon platformId={platformId} className="w-8 h-8" />
