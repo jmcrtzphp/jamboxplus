@@ -1155,10 +1155,11 @@ async function startServer() {
         html = fs.readFileSync(fsPath, 'utf-8');
       }
 
+      const baseUrl = (req.headers['x-forwarded-proto'] || req.protocol) + '://' + req.get('host');
       let title = "JamBox+ | Watch Movies & TV Shows Streaming";
       let description = "Watch movies and TV shows on JamBox+. Discover your next favorite movie or series.";
-      let image = "https://jamboxplusph.dpdns.org/preview.jpg";
-      let url = "https://jamboxplusph.dpdns.org" + (req.path === '/' ? '' : req.path);
+      let image = baseUrl + "/preview.jpg";
+      let url = baseUrl + (req.path === '/' ? '' : req.path);
 
       if (isMovie || isTv) {
         const parts = req.path.split('/');
