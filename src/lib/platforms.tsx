@@ -11,11 +11,11 @@ export interface PlatformConfig {
 }
 
 export const PLATFORMS: Record<string, PlatformConfig> = {
-  netflix: { id: 'netflix', displayName: 'Netflix', providerId: '8', color: '#E50914', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Netflix_2016_N_logo.svg' },
-  disney: { id: 'disney', displayName: 'Disney+', providerId: '337', color: '#113CCF', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg' },
-  prime: { id: 'prime', displayName: 'Prime Video', providerId: '9', color: '#00A8E1', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prime-video-alt-dark.svg' },
-  apple: { id: 'apple', displayName: 'Apple TV+', providerId: '350', color: '#FFFFFF', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apple-tv-plus-light.svg' },
-  max: { id: 'max', displayName: 'HBO Max', providerId: '1899', color: '#002BE7', logoPath: 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/hbo-max-light.svg' }
+  netflix: { id: 'netflix', displayName: 'Netflix', providerId: 'netflix', color: '#E50914', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Netflix_2016_N_logo.svg' },
+  disney: { id: 'disney', displayName: 'Disney+', providerId: 'disney-plus', color: '#113CCF', logoPath: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg' },
+  prime: { id: 'prime', displayName: 'Prime Video', providerId: 'prime-video', color: '#00A8E1', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prime-video-alt-dark.svg' },
+  apple: { id: 'apple', displayName: 'Apple TV+', providerId: 'apple-tv', color: '#FFFFFF', logoPath: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apple-tv-plus-light.svg' },
+  max: { id: 'max', displayName: 'HBO Max', providerId: 'hbo-max', color: '#002BE7', logoPath: 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/hbo-max-light.svg' }
 };
 
 export interface ResolvedPlatform {
@@ -27,7 +27,7 @@ export interface ResolvedPlatform {
 }
 
 export function resolvePlatform(platformId?: string, show?: Show, country: string = 'us'): ResolvedPlatform | null {
-  if (platformId === 'theaters') {
+  if (platformId === 'theaters' || platformId === 'now-showing') {
     return {
       id: 'theaters',
       displayName: 'In Theaters',

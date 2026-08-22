@@ -1,10 +1,21 @@
 const fs = require('fs');
-let server = fs.readFileSync('server.ts', 'utf-8');
+let code = fs.readFileSync('server.ts', 'utf8');
 
-server = server.replace(
-  /const cast = item\.credits\?\.cast\?\.slice\(0, 8\)\.map\(\(c: any\) => \(\{ name: c\.name, profilePath: c\.profile_path \? `https:\/\/image\.tmdb\.org\/t\/p\/w185\${c\.profile_path}` : undefined \}\)\) \|\| item\.cast \|\| \[\];/,
-  "const cast = item.credits?.cast?.filter((c: any) => c.profile_path).slice(0, 12).map((c: any) => ({ id: c.id, name: c.name, character: c.character, profilePath: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : undefined })) || item.cast || [];\n  const creators = item.created_by?.map((c: any) => c.name) || item.creators || [];"
-);
+if (!code.includes('app.get("/api/watch/providers/movie"')) {
+  code = code.replace(
+`// Search Multi endpoint`,
+`// Watch Providers
+app.get("/api/watch/providers/movie", async (req, res) => {
+  try {
+    const data = await fetchTmdb("/watch/providers/movie", req.query);
+    res.json(data);
+  } catch (error: any) {
+    console.error("Watch providers fetch fallback:", error.message);
+    res.json({ results: [] });
+  }
+});
 
-server = server.replace(/directors,\\n    creators,/, 'directors, creators,');
-fs.writeFileSync('server.ts', server);
+// Search Multi endpoint`
+  );
+  fs.writeFileSync('server.ts', code);
+}
