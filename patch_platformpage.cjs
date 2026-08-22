@@ -1,47 +1,27 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/Movies.tsx', 'utf8');
+let code = fs.readFileSync('src/components/Movies.tsx', 'utf-8');
 
 code = code.replace(
-`function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavorite, toggleFavorite }: any) {
-  const [shows, setShows] = useState<Show[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const p = PLATFORMS[platformId];`,
-`function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavorite, toggleFavorite }: any) {
-  const [shows, setShows] = useState<Show[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const isNowShowing = platformId === 'now-showing';
-  const p = isNowShowing ? { displayName: 'Now Showing', color: 'from-[#000000] to-[#1A1A1A]', type: 'subscription' } : PLATFORMS[platformId];`
+  "order_by: 'popularity_1week',\n      cursor:",
+  "order_by: 'popularity_1week',\n      with_watch_monetization_types: 'flatrate',\n      cursor:"
 );
 
+// Also add import for StreamingPlatformsRow
 code = code.replace(
-`    fetchFilters({ 
-      country, 
-      show_type: type, 
-      catalogs: p.providerId, 
-      order_by: 'popularity_1week',
-      with_watch_monetization_types: 'flatrate',
-      cursor: reset ? undefined : nextCursor
-    }).then(res => {`,
-`    fetchFilters(isNowShowing ? {
-      country,
-      show_type: type,
-      order_by: 'popularity.desc',
-      in_theaters: true,
-      cursor: reset ? undefined : nextCursor
-    } : { 
-      country, 
-      show_type: type, 
-      catalogs: p.providerId, 
-      order_by: 'popularity.desc',
-      with_watch_monetization_types: 'flatrate',
-      cursor: reset ? undefined : nextCursor
-    }).then(res => {`
+  "import { FloatingNav } from './FloatingNav';",
+  "import { FloatingNav } from './FloatingNav';\nimport { StreamingPlatformsRow } from './StreamingPlatformsRow';"
+);
+
+// Add StreamingPlatformsRow to MoviesView
+code = code.replace(
+  '<ContinueWatchingRow onSelect={onSelectMovie} filterType="movie" />',
+  '<ContinueWatchingRow onSelect={onSelectMovie} filterType="movie" />\n        <StreamingPlatformsRow onSelectPlatform={(id) => onSeeAll(id, \'all\')} />'
+);
+
+// Add StreamingPlatformsRow to TVShowsView
+code = code.replace(
+  '<ContinueWatchingRow onSelect={onSelectMovie} filterType="tv" />',
+  '<ContinueWatchingRow onSelect={onSelectMovie} filterType="tv" />\n        <StreamingPlatformsRow onSelectPlatform={(id) => onSeeAll(id, \'all\')} />'
 );
 
 fs.writeFileSync('src/components/Movies.tsx', code);

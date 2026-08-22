@@ -2,11 +2,13 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STREAMING_PLATFORMS_CARDS = [
-  { id: 'netflix', title: 'Netflix', img: 'https://i.imgflip.com/azc2q3.gif' },
-  { id: 'disney', title: 'Disney+', img: 'https://i.imgflip.com/azc2gs.gif' },
-  { id: 'prime', title: 'Prime Video', img: 'https://i.imgflip.com/azc9xy.gif' },
-  { id: 'apple', title: 'Apple TV+', img: 'https://i.imgflip.com/azc2on.gif' },
-  { id: 'max', title: 'HBO Max', img: 'https://i.imgflip.com/azc2lu.gif' }
+  { id: 'netflix', title: 'Netflix', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.netflix.focus.webm?v=7' },
+  { id: 'disney', title: 'Disney+', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.disney_plus.focus.webm?v=7' },
+  { id: 'prime', title: 'Prime Video', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.prime_video.focus.webm?v=7' },
+  { id: 'apple', title: 'Apple TV+', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.apple_tv_plus.focus.webm?v=7' },
+  { id: 'max', title: 'HBO Max', media: 'https://i.imgflip.com/azc2lu.gif' },
+  { id: 'paramount', title: 'Paramount+', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.paramount_plus.focus.webm?v=7' },
+  { id: 'hulu', title: 'Hulu', media: 'https://cdn.xperience-app.com/covers/default/streaming_services.hulu.focus.webm?v=7' }
 ];
 
 interface Props {
@@ -56,14 +58,24 @@ export function StreamingPlatformsRow({ onSelectPlatform }: Props) {
             onClick={() => onSelectPlatform(platform.id)}
             className="flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] lg:w-[360px] aspect-video rounded-2xl overflow-hidden glass-subtle hover:glass-medium border border-white/15 hover:border-blue-500/50 transition-all duration-300 cursor-pointer group/card shadow-lg flex flex-col justify-end relative"
           >
-            <img 
-              src={platform.img} 
-              alt={platform.title} 
-              loading="lazy"
-              decoding="async"
-              
-              className="absolute inset-0 w-full h-full object-cover scale-[1.15] transition-transform duration-500 ease-out group-hover/card:scale-125"
-            />
+            {platform.media.includes('.webm') ? (
+              <video 
+                src={platform.media}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover scale-[1.15] transition-transform duration-500 ease-out group-hover/card:scale-125"
+              />
+            ) : (
+              <img 
+                src={platform.media} 
+                alt={platform.title} 
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover scale-[1.15] transition-transform duration-500 ease-out group-hover/card:scale-125"
+              />
+            )}
             <div className="absolute inset-0 bg-black/10 group-hover/card:bg-transparent transition-colors duration-300 pointer-events-none" />
           </div>
         ))}

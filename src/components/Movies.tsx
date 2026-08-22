@@ -275,7 +275,7 @@ const FavoriteItem = React.memo(function FavoriteItem({ id, country, onClick, is
 });
 
 function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavorite, toggleFavorite, onSeeAll }: any) {
-  const cinemasFetcher = useCallback(() => fetchFilters({ country, show_type: 'movie', order_by: 'popularity.desc', in_theaters: true }), [country]);
+  const trendingFetcher = useCallback(() => fetchFilters({ country, show_type: 'movie', order_by: 'top_rated' }), [country]);
 
   return (
     <div className="space-y-12">
@@ -294,64 +294,26 @@ function MoviesView({ country, heroMovies, setHeroMovies, onSelectMovie, isFavor
         <StreamingPlatformsRow onSelectPlatform={(id) => onSeeAll(id, 'all')} />
 
         <CategoryRow 
-          title="Now Showing" 
-          fetcher={cinemasFetcher} 
+          title="Top Rated Movies" 
+          fetcher={trendingFetcher} 
           onSelect={onSelectMovie} 
           isFavorite={isFavorite}
           toggleFavorite={toggleFavorite}
           country={country}
-          onSeeAll={() => onSeeAll('now-showing', 'movie')}
         />
 
-        <PlatformRow 
-          platformId="netflix"
-          type="movie"
-          country={country}
-          onSelect={onSelectMovie}
-          isFavorite={isFavorite}
-          toggleFavorite={toggleFavorite}
-          onSeeAll={() => onSeeAll('netflix', 'movie')}
-        />
-
-        <PlatformRow 
-          platformId="disney"
-          type="movie"
-          country={country}
-          onSelect={onSelectMovie}
-          isFavorite={isFavorite}
-          toggleFavorite={toggleFavorite}
-          onSeeAll={() => onSeeAll('disney', 'movie')}
-        />
-
-        <PlatformRow 
-          platformId="prime"
-          type="movie"
-          country={country}
-          onSelect={onSelectMovie}
-          isFavorite={isFavorite}
-          toggleFavorite={toggleFavorite}
-          onSeeAll={() => onSeeAll('prime', 'movie')}
-        />
-
-        <PlatformRow 
-          platformId="apple"
-          type="movie"
-          country={country}
-          onSelect={onSelectMovie}
-          isFavorite={isFavorite}
-          toggleFavorite={toggleFavorite}
-          onSeeAll={() => onSeeAll('apple', 'movie')}
-        />
-
-        <PlatformRow 
-          platformId="max"
-          type="movie"
-          country={country}
-          onSelect={onSelectMovie}
-          isFavorite={isFavorite}
-          toggleFavorite={toggleFavorite}
-          onSeeAll={() => onSeeAll('max', 'movie')}
-        />
+        {Object.keys(PLATFORMS).map(platformId => (
+          <PlatformRow 
+            key={platformId}
+            platformId={platformId}
+            type="movie"
+            country={country}
+            onSelect={onSelectMovie}
+            isFavorite={isFavorite}
+            toggleFavorite={toggleFavorite}
+            onSeeAll={() => onSeeAll(platformId, 'movie')}
+          />
+        ))}
       </div>
     </div>
   );
@@ -571,7 +533,7 @@ const HeroBanner = React.memo(function HeroBanner({ country, type, heroMovies, s
   );
 });
 
-function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, country, onSeeAll }: any) {
+function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, country }: any) {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -690,7 +652,7 @@ function CategoryRow({ title, fetcher, onSelect, isFavorite, toggleFavorite, cou
   );
 }
 
-function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFavorite, onSeeAll, orderBy, titleOverride }: any) {
+function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFavorite, onSeeAll }: any) {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -729,7 +691,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
       country, 
       show_type: type,
       catalogs: p.providerId,
-      order_by: orderBy || 'popularity_1week',
+      order_by: 'popularity_1week',
       with_watch_monetization_types: 'flatrate',
       limit: 20
     }).then((res: any) => {
@@ -742,7 +704,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
     });
     
     return () => { isMounted = false; };
-  }, [platformId, type, country, isInView, p, orderBy]);
+  }, [platformId, type, country, isInView, p]);
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -778,7 +740,7 @@ function PlatformRow({ platformId, type, country, onSelect, isFavorite, toggleFa
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <StreamingPlatformIcon platformId={platformId} className="w-8 h-8" />
-          <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow">{titleOverride || p.displayName}</h3>
+          <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow">{p.displayName}</h3>
         </div>
         
         <button 
@@ -833,8 +795,7 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const isNowShowing = platformId === 'now-showing';
-  const p = isNowShowing ? { displayName: 'Now Showing', color: 'from-[#000000] to-[#1A1A1A]', type: 'subscription' } : PLATFORMS[platformId];
+  const p = PLATFORMS[platformId];
 
   const heroRef = useRef<HTMLDivElement>(null);
   const { imageScale, contentY } = usePullDownZoom(heroRef);
@@ -843,17 +804,11 @@ function PlatformPage({ platformId, type, country, onBack, onSelectMovie, isFavo
     if (reset) setLoading(true);
     else setIsFetchingMore(true);
 
-    fetchFilters(isNowShowing ? {
-      country,
-      show_type: type,
-      order_by: 'popularity.desc',
-      in_theaters: true,
-      cursor: reset ? undefined : nextCursor
-    } : { 
+    fetchFilters({ 
       country, 
       show_type: type, 
       catalogs: p.providerId, 
-      order_by: 'popularity.desc',
+      order_by: 'popularity_1week',
       with_watch_monetization_types: 'flatrate',
       cursor: reset ? undefined : nextCursor
     }).then(res => {

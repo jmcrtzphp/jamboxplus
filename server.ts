@@ -632,7 +632,7 @@ function buildTmdbDiscoverParams(query: Record<string, any>, type: 'movie' | 'tv
     language: 'en-US'
   };
 
-  // Watch Provider (e.g. Netflix 8, Disney 337, Prime 9, Apple 350, Max 1899)
+  // Watch Provider (e.g. Netflix 8, Disney 337, Prime 9, Apple 350, Max 1899, Paramount 2616, Hulu 15)
   const provider = query.catalogs || query.with_watch_providers;
   if (provider) {
     params.with_watch_providers = String(provider);
@@ -644,21 +644,15 @@ function buildTmdbDiscoverParams(query: Record<string, any>, type: 'movie' | 'tv
   const orderBy = query.order_by || query.sort_by;
   if (orderBy === 'popularity_1week' || orderBy === 'popularity_1month' || orderBy === 'popularity_alltime' || orderBy === 'popularity.desc') {
     params.sort_by = 'popularity.desc';
-  } else if (orderBy === 'rating' || orderBy === 'vote_average.desc' || orderBy === 'top_rated') {
+  } else if (orderBy === 'rating' || orderBy === 'vote_average.desc') {
     params.sort_by = 'vote_average.desc';
-    params['vote_count.gte'] = 300;
+    params['vote_count.gte'] = 50;
   } else if (orderBy === 'year_desc' || orderBy === 'release_date.desc' || orderBy === 'first_air_date.desc') {
     params.sort_by = type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc';
   } else if (orderBy === 'year_asc' || orderBy === 'release_date.asc' || orderBy === 'first_air_date.asc') {
     params.sort_by = type === 'movie' ? 'primary_release_date.asc' : 'first_air_date.asc';
   } else {
     params.sort_by = 'popularity.desc';
-  }
-
-  // In Theaters
-  if (query.in_theaters === 'true' || query.in_theaters === true) {
-    params.with_release_type = '2|3';
-    params.region = 'US';
   }
 
   // Genres
@@ -692,20 +686,11 @@ app.get("/api/movies", async (req, res) => {
     const isTrending = (req.query.order_by === 'popularity_1week' || req.query.order_by === 'popularity_1month') && !hasProviderOrGenre;
     
     let data;
-    const inTheaters = req.query.in_theaters === 'true' || req.query.in_theaters === true;
-    
-    if (inTheaters) {
-      data = await fetchTmdb("/movie/now_playing", {
-        language: "en-US",
-        region: "US",
-        page: String(req.query.cursor || req.query.page || 1)
-      });
-    } else if (isTrending && (!req.query.cursor || req.query.cursor === '1')) {
+    if (isTrending && (!req.query.cursor || req.query.cursor === '1')) {
       // Use TMDB trending endpoint for top weekly movies
       data = await fetchTmdb("/trending/movie/week", { page: String(req.query.cursor || req.query.page || 1) });
     } else {
       const tmdbParams = buildTmdbDiscoverParams(req.query, 'movie');
-      console.log("Fetching discover with params:", tmdbParams);
       data = await fetchTmdb("/discover/movie", tmdbParams);
     }
     
@@ -808,17 +793,6 @@ app.get("/api/discover", async (req, res) => {
   } catch (error: any) {
     console.error("Discover fetch fallback:", error.message);
     res.json({ shows: [...FALLBACK_MOVIES, ...FALLBACK_SHOWS].map(s => normalizeTmdbShow(s)), hasMore: false });
-  }
-});
-
-// Watch Providers
-app.get("/api/watch/providers/movie", async (req, res) => {
-  try {
-    const data = await fetchTmdb("/watch/providers/movie", req.query);
-    res.json(data);
-  } catch (error: any) {
-    console.error("Watch providers fetch fallback:", error.message);
-    res.json({ results: [] });
   }
 });
 
