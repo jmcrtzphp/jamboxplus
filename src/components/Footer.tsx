@@ -63,23 +63,13 @@ export const Footer: React.FC<{ onOpenCookies?: () => void, onOpenPrivacy?: () =
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-6">Support the Developer</h4>
+            <h4 className="text-white font-semibold mb-6">Contact</h4>
             <div className="flex flex-col gap-5 text-sm">
-              <p className="text-white/60 leading-relaxed">
-                Please support this ongoing development to keep the cinematic experience ad-free and lightning fast.
-              </p>
               <div className="flex flex-col gap-2">
                 <span className="text-white/40 text-xs uppercase tracking-wider font-semibold">Feedback & Requests</span>
-                <a href="mailto:jmcrtzphp@gmail.com" className="text-amber-500 hover:text-amber-400 transition-colors inline-flex items-center gap-2">
-                  jmcrtzphp@gmail.com
+                <a href="mailto:uj2b6eb4dfna@mail.dpdns.org" className="text-amber-500 hover:text-amber-400 transition-colors inline-flex items-center gap-2">
+                  uj2b6eb4dfna@mail.dpdns.org
                 </a>
-              </div>
-              <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                <span className="text-white/80 font-medium flex items-center gap-2">
-                  ☕ Buy me a coffee
-                </span>
-                <p className="text-white/50 text-xs">Send via GCash</p>
-                <span className="text-amber-500 font-mono text-lg tracking-wider mt-1">0995 014 5525</span>
               </div>
             </div>
           </div>
